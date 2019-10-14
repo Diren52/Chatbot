@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="" />
+  <title>
+    <%= title %>
+  </title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+  <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <!-- Morris Charts CSS -->
+  <link rel="stylesheet" href="vendor/morrisjs/morris.css">
+  <link rel="stylesheet" href="stylesheets/main.css" />
+  <link rel="stylesheet" href="stylesheets/chat.css" />
+  <link rel="stylesheet" href="stylesheets/message_overview.css" />
+  <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+</head>
+
+<body>
+  <div id="wrapper">
+    <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+      </div>
+      <ul class="nav navbar-top-links navbar-left">
+        <li>
+          <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+        </li>
+        <li id="nav_message">
+          <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+        </li>
+        <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+          <a href="/message_overview"> 總覽</a>
+        </li>
+        <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+          <a href="/message_autoreply"> 自動回覆</a>
+        </li>
+        <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+          <a href="/message_keywordsreply"> 關鍵字回覆</a>
+        </li>
+        <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+          <a href="/message_add_friend_reply"> 加好友回覆</a>
+        </li>
+      </ul>
+      <ul class="nav navbar-top-links navbar-right">
+        <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+          <ul class="dropdown-menu dropdown-user">
+            <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+            <li class="divider"></li>
+            <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div id="home">
+    <h3>預約群發</h3>
+    <p>新增、編輯傳送到LINE@的訊息</p>
+    <!--     <p>NOTE FOR DEVELOPERS:<br/>
+        1. Limit users 功能未做(緩）<br/>
+        2. Emoji未做(緩）<br/>
+        3. Append Text部分完成，其他未做(緩）<br/>
+        4. Sort/ Filter 功能現階段完成，後續可討論<br/>
+        5. History功能未做(緩）<br/>
+        6. draft欄上UI空格暫未解決<br/>
+        7. 時間功能待續<br/>    </p> -->
+    <div>
+      <button type="button" class="btn btn-default" data-toggle="modal" data-target="#quickAdd" style="clear:both">
+        <span class="fa fa-plus fa-fw"></span> 新增訊息
+      </button>
+      <br/>
+    </div>
+    <div class="tab"style="margin-top: 3%">
+      <button style="padding:1.5%; margin:0" class="tablinks table_select" rel="Appointment">預約</button>
+      <button style="padding:1.5%; margin:0" class="tablinks" rel="Draft">草稿</button>
+      <button style="padding:1.5%; margin:0" class="tablinks" rel="History">歷史</button>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="quickAdd" tabindex="-1" role="dialog" aria-labelledby="quickAddTitle" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="quickAddTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+            <!-- Form Content -->
+            <div class="form-group">
+              <label>篩選發送:</label>
+              <div class="col-4">
+                <div>
+                  <input type="radio" name="who-send" id="send-all" checked="true" onclick="document.getElementById('limituser').style.display='none'"><label for="send-all">全部發送</label>
+                  <input type="radio" name="who-send" id="send-somebody" onclick="document.getElementById('limituser').style.display=''"><label for="send-somebody">限制發送對象</label>
+                </div>
+              </div>
+            </div>
+            <!-- LIMIT USER -->
+            <div id="limituser" style="display:none; background-color: lightblue">
+              <table>
+                <tr>
+                  <td>
+                    <div style="width:50%;float:left">
+                      <p><b>標籤</b></p>
+                      <select style="width:80%;height:250px;padding:1%" multiple id="screen_tags">
+                          <option value="none">不指定</option>
+                        </select>
+                    </div>
+                    <div style="width:50%; float:right">
+                      <p><b>VIP等級</b></p>
+                      <select style="width:80%;height:250px;padding:1%" multiple id="vip_level">
+                          <option value="none">不指定</option>
+                        </select>
+                    </div>
+                    <!--   <button style="width:20%;margin:0.5%; padding:0.5%; float:left" class="tablinks" rel="text" >年齡</button>
+                        <button style="width:20%;margin:0.5%; padding:0.5%; float:left" class="tablinks" rel="sticker">性別</button>
+                        <button style="width:20%;margin:0.5%; padding:0.5%; float:left" class="tablinks" rel="image" >地點</button>
+                        <button style="width:20%;margin:0.5%; padding:0.5%; float:left" class="tablinks" rel="coupon">平台</button>
+                        <button style="width:20%;margin:0.5%; padding:0.5%; float:left" class="tablinks" rel="election" >加好友時間長度</button> -->
+                  </td>
+                </tr>
+                <!-- <tr>
+                    <td><b>已選用戶比例</b> <p style="color:red"><b>此功能暫未開放</b></p>
+                    </td>
+                    </tr>
+                    <tr>
+                    <th>標籤(optional)   <input placeholder="範例：女性 iOS"></th>
+                    </tr> -->
+              </table>
+            </div>
+            <!-- 時間 -->
+            <div class="form-group">
+              <label>設定傳送時間:</label><br>
+              <div>
+                <input type="radio" name="when-send" id="send-now" checked="true"><label for="send-now">立刻傳送</label>
+              </div>
+              <div>
+                <input type="radio" name="when-send" id="send-sometime"><label for="send-sometime">傳送時間:</label>
+                <input type="datetime-local" class="form-control" id="sendTime" style="width:45% ; display:inline" value="2017-12-01T00:00" />
+              </div>
+            </div>
+            <!--  傳送到主頁  -->
+            <!--                     <div class="form-group">
+                <label for="modal-datetime">同時傳送到主頁:</label>
+                <p>註：一次只能上傳一則訊息到主頁</p>
+                <div class="radio">
+                <label><input type="radio" name="homepage-send" value="true" checked="true">是</label>
+                </div>
+                <div class="radio">
+                <label><input type="radio" name="homepage-send" value="false" >否</label>
+                </div>
+                </div> -->
+            <section>
+              <!--TEXT AREA -->
+              <div>
+                <table id="inputText"></table>
+              </div>
+              <!--STICKER -->
+              <div id="sticker" style="display:none">
+                <table>
+                  <tr>
+                    <th style="height:150px; padding:1.5%; background-color: #ddd; color:red">貼圖功能未開放</th>
+                  </tr>
+                  <tr>
+                    <td style="background-color: #ddd">
+                      <form style="padding:1%">
+                      </form>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <!--IMAGE -->
+              <table id="image" style="display:none; background-color: lightgrey">
+                <th>選擇上傳照片</th>
+                <td style="height:200px; width:100%; padding:3%">
+                  <input type="file" />
+                </td>
+              </table>
+            </section>
+            <table>
+              <td style="padding:5%">
+                <p>一次可以發送三則訊息，請選擇訊息種類</p>
+                <p class="error_msg" style="display:none;color:red"><b>超過訊息上限</b></p>
+                <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="btn-text">文字</button>
+                <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="btn-sticker">貼圖</button>
+                <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="btn-image">圖片</button>
+              </td>
+            </table>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+              <button type="button" class="btn btn-primary" id="modal-draft">存成草稿</button>
+              <button type="button" class="btn btn-primary" id="modal-submit">確認</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- =======================  END MODAL  ======================-->
+    <section style="margin:0">
+      <div class="tab">
+        <div style="width:20%; position:absolute; float:left;margin-top: 1% ">
+          <div class="input-group" style="margin-left:10px">
+            <input type="text" class="form-control" id="exampleInputAmount" placeholder="搜尋.." />
+            <div class="input-group-addon"><span class="fa fa-search fa-fw" id="ticket-search"></span></div>
+          </div>
+        </div>
+        <div style="width:15%; position:absolute; float:left; margin: 1% 1% 1% 21%">
+          <select class="form-control" id="modal-category">
+              <option>分類</option>
+              <option>文字</option>
+              <option>圖片</option>
+              <option>影片</option>
+              <option>音訊</option>
+              <option>地址</option>
+              <option>貼圖</option>
+            </select>
+        </div>
+        <!--     [status filter] -->
+        <div style="display:block;width:15%; position:relative; float:left; margin: 1% 1% 1% 42%">
+          <select class="form-control" id="modal-priority">
+              <option>狀態</option>
+              <option><button class="tablinks" rel="Appointment">保存</button></option>
+              <option><button class="tablinks" rel="Draft">草稿</button></option>
+            </select>
+        </div>
+      </div>
+
+    </section>
+    <section style="color: black;">
+      <div id="Appointment" class="tabcontent" style="display:block; margin:0 ;padding:0 ">
+        <div class="table tabcontent" style="display:block;padding:0">
+          <table class="table table-border" style="margin:0">
+              <tr>
+                <th>No.</th>
+                <th>內容</th>
+                <th>分類</th>
+                <th>標籤(optional)</th>
+                <th>狀態</th>
+                <th>預約</th>
+                <th></th>
+              </tr>
+            <tbody id="data-appointment"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="Draft" class="tabcontent" style="display:block; margin:0 ;padding:0 ">
+        <div class="table tabcontent" style="display:block;padding:0">
+          <table class="table table-border" style="margin:0">
+            <tr>
+              <th>No.</th>
+              <th>內容</th>
+              <th>分類</th>
+              <th>標籤(optional)</th>
+              <th>狀態</th>
+              <th>預約</th>
+              <th></th>
+            <tr>
+            <tbody id="data-draft"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="History" class="tabcontent" style="display:none; margin:0 ;padding:0">
+        <div class="tabcontent" style="display:block;padding:0">
+          <table class="table table-border" style="margin:0">
+            <tr>
+              <th>No.</th>
+              <th>內容</th>
+              <th>分類</th>
+              <th>標籤(optional)</th>
+              <th>狀態</th>
+              <th>預約</th>
+              <th></th>
+            <tr>
+            <tbody id="data-history"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- View Modal -->
+    <section>
+      <div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-labelledby="viewModalTitle" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="viewModalTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+              <form>
+                <!-- 編號 -->
+                <div class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">篩選發送:  </label>
+                  <input disabled="disabled" class="form-control" id="view-lmtuser" value="-">
+                </div>
+                <!-- 任務內容 -->
+                <div id="任務內容" class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">任務內容:  </label>
+                  <!--                 <input disabled="disabled" class="form-control" id="view-textinput" value="">
+                      -->
+                </div>
+                <!-- 標籤 -->
+                <div class="form-group">
+                  <label for="tags">標籤:  </label>
+                  <input disabled="disabled" class="form-control" id="view-tags" value="">
+                </div>
+                <!-- 狀態 -->
+                <div class="form-group">
+                  <label for="status">狀態:  </label>
+                  <input disabled="disabled" class="form-control" id="view-stat" value="111">
+                </div>
+                <!-- 負責人 -->
+                <div class="form-group">
+                  <label for="owner" class="col-2 col-form-label">負責人:  </label>
+                  <input disabled="disabled" class="form-control" id="view-owne" value="">
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Edit Modal -->
+    <section>
+      <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalTitle" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editModalTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+              <form>
+                <!-- 編號 -->
+                <div class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">ID</label>
+                  <span id="edit-id"></span>
+                </div>
+                <!-- 任務內容 -->
+                <div class="form-group">
+                  <label for="edit-task-name" class="col-2 col-form-label">任務內容:  </label>
+                  <div id="編輯內容" class="col-4">
+                    <!--                   <input class="form-control" type="text" value="" id="edit-taskContent">
+                      -->
+                  </div>
+                </div>
+                <!-- 標籤 -->
+                <div class="form-group">
+                  <label for="edit-tags">標籤:  </label>
+                  <select style="height:250px" multiple class="form-control" id="edit-tags">
+                    <option>未指定</option>
+                  </select>
+                </div>
+                <!-- 狀態 -->
+                <div class="form-group">
+                  <label for="edit-status">狀態:  </label>
+                  <select class="form-control" id="edit-status">
+                    <option>保存</option>
+                    <option>草稿</option>
+                  </select>
+                </div>
+                <!-- 時間 -->
+                <div class="form-group">
+                  <label for="edit-time">時間:  </label>
+                  <div class="radio">
+                    <label><input type="radio" id="edit-sendNow" name="when-send" value="now" checked="true">立刻傳送</label>
+                  </div>
+                  <div class="radio">
+                    <label><input type="radio" name="when-send" value="sometime" >傳送時間:</label>
+                    <input type="datetime-local" class="form-control" id="edit-time" style="width:45% ; display:inline" value="2017-12-01T00:00" />
+                  </div>
+                </div>
+                <!-- 負責人 -->
+                <div class="form-group">
+                  <label for="edit-owner" class="col-2 col-form-label">負責人:  </label>
+                  <div class="col-4">
+                    <input class="form-control" type="text" value="" id="edit-owner">
+                  </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+              <button type="button" class="btn btn-primary" id="edit-submit">確認</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <% include ../views/partials/firebase_disable.ejs %>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+  <script src="config/firebaseConfig.js"></script>
+  <script src="javascripts/firebaseAuth.js"></script>
+  <script src="javascripts/navigation.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+  <script src="javascripts/message_overview.js"></script>
+  <script src="javascripts/partials/firebase-disable.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css" />
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <link rel="stylesheet" href="stylesheets/chat.css" />
+    <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top chatshier-navbar" role="navigation">
+        <div class="navbar-header">
+          <a class="navbar-brand white" href="/"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <!-- <li class="sub-tag">
+            <a href="/message_overview"> 總覽</a>
+          </li> -->
+          <li class="sub-tag">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="sub-tag">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="sub-tag">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div id="chatHome">
+      <div class="chat-area">
+        <div id="chatApp" class="colume" >
+          <div class="chat-app-item" id="Line_1" open="true">
+            <img class="software-icon" src="http://informatiekunde.dilia.be/sites/default/files/uploads/logo-line.png">
+            <div class="hidden-group-name" id="line1">
+              <p></p>
+            </div>
+            <div class="unreadMsg-count"></div>
+          </div>
+          <div class="chat-app-item" id="Line_2" open="true">
+            <img class="software-icon" src="http://informatiekunde.dilia.be/sites/default/files/uploads/logo-line.png">
+            <div class="hidden-group-name" id="line2">
+              <p></p>
+            </div>
+            <div class="unreadMsg-count"></div>
+          </div>
+          <div class="chat-app-item" id="FB" open="true" rel="FB">
+            <img class="software-icon" src="https://facebookbrand.com/wp-content/themes/fb-branding/prj-fb-branding/assets/images/fb-art.png">
+            <div class="hidden-group-name" id="fbname">
+              <p></p>
+            </div>
+            <div class="unreadMsg-count"></div>
+          </div>
+          <div class="chat-app-item" id="agentChat" open="true" rel="internal">
+            <img class="software-icon" src="https://cdn4.iconfinder.com/data/icons/devine_icons/Black/PNG/System%20and%20Internet/Account%20and%20Control.png">
+          </div>
+          <div class="chat-app-item" id="All" open="true" rel="All">
+            <span>全部</span>
+          </div>
+          <div class="chat-app-item" id="all_unread" open="true" rel="unread">
+            <span>未讀</span>
+          </div>
+          <div class="chat-app-item" id="assigned" open="true" rel="assigned">
+            <span>已指派</span>
+          </div>
+          <div class="chat-app-item" id="unassigned" open="true" rel="unassigned">
+            <span>未指派</span>
+          </div>
+        </div>
+        <div id="user" class="colume">
+          <div class="search">
+            <input type="text" id="searchBox" placeholder="Search for messages..">
+            <span id="search-right" class="invisible">
+              <span class="number">
+                <span id="this-number" class="this-number">1</span>
+                <span class="slash-number">/</span>
+                <span id="total-number" class="total-number">5</span>
+              </span>
+              <span class="glyphicon grey glyphicon-chevron-up" aria-hidden="true"></span>
+              <span class="glyphicon grey glyphicon-chevron-down" aria-hidden="true"></span>
+            </span>
+          </div>
+          <p class="error"></p>
+          <div class="tablinks-area">
+            <ol class="list-group" id="vip_list"></ol>
+            <ol class="list-group" id="clients"></ol>
+          </div>
+        </div>
+        <div id="chat" class="content-panel">
+          <div class="chat-prof">
+            <h4 id="prof_nick"></h4>
+          </div>
+          <div id="canvas"></div>
+          <div id="send-message">
+            <div class="form-upper">
+              <div class="user-room-container">
+                <select id="user-rooms"></select>
+              </div>
+              <div class="insert-media">
+                <button data-id="file-image" data-type="image" id="attImg" class="on-click-show"><i class="fa fa-file-image-o fa" aria-hidden="true"></i></button>
+                <button data-id="file-video" data-type="video" id="attVid" class="on-click-show"><i class="fa fa-file-video-o fa" aria-hidden="true"></i></button>
+                <button data-id="file-audio" data-type="audio" id="attAud" class="on-click-show"><i class="fa fa-file-audio-o fa" aria-hidden="true"></i></button>
+                <input type="file" id="file-image" data-type="image" class="send-file" accept="image/*" />
+                <input type="file" id="file-video" data-type="video" class="send-file" accept="video/*" />
+                <input type="file" id="file-audio" data-type="audio" class="send-file" accept="audio/*" />
+              </div>
+            </div>
+            <div class="form-lower">
+              <input type="text" placeholder="輸入訊息..." size="35" id="message" />
+              <input type="button" id="submitMsg" />
+            </div>
+          </div>
+        </div>
+          <div id="infoPanel" class="colume">
+            <div class="card text-center">
+              <div style="height:40px">
+                <ul class="nav navbar-top-links navbar-left">
+                  <li><a style="color:#009900" id="showProfile">用戶資料</a></li>
+                  <li><a style="color:#009900" id="showTodo">待辦事項</a></li>
+                </ul>
+              </div>
+              <div id="infoCanvas"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+        <div class="modal fade" id="ticketInfoModal" role="dialog">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <div style="display:flex">
+                  <span id="ID_num"></span>
+                  <table>
+                    <th style="display:none">內容</th>
+                    <td class="modal-title edit">用戶代號</td>
+                  </table>
+                </div>
+              </div>
+              <div class="modal-body">
+                <table class="ticket_info_content">
+
+                </table>
+<!--                 <table>
+                  <th>備註：</th>
+                  <td class="ticket_memo"></td>
+                </table> -->
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-warning" data-target="#memoModal" data-toggle="modal">備註</button>
+                <button type="button" id="ticketInfo-submit" class="btn btn-success" data-dismiss="modal">確認</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <!-- 新增memo -->
+      <div class="modal fade" id="memoModal" role="dialog">
+        <div class="modal-dialog">
+        
+          <!-- memo content-->
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title">新增備註</h4>
+            </div>
+            <div class="modal-body">
+              <form>
+                <div class="form-group">
+                  <label for="memoInput">輸入文字:</label>
+                  <textarea type="text" class="form-control" id="memoInput"></textarea>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+              <button type="button" class="btn btn-success" id="submitMemo">儲存</button>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+     
+      <!-- 新增todo表單-->
+      <div class="modal fade" id="addTicketModal" role="dialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+              <div style="display:flex">
+                <span id="ID_num"></span>
+                <table>
+                  <th style="display:none">內容</th>
+                  <td class="modal-title edit">用戶代號</td>
+                </table>
+
+              </div>
+            </div>
+            <div class="modal-body">
+              <!-- Form -->
+              <div id="form-wrap">
+                <!-- 任務內容 -->
+                <form>
+                  <!-- 客戶名 -->
+                  <div class="form-group row">
+                    <label for="subject" class="col-2 col-form-label">客戶姓名</label>
+                    <div class="col-4">
+                      <input class="form-control" type="text" value="" id="form-name">
+                    </div>
+                  </div>
+                  <!-- 客戶Id -->
+                  <div class="form-group row">
+                    <label for="subject" class="col-2 col-form-label">客戶ID</label>
+                    <div class="col-4">
+                      <input class="form-control" type="text" value="" id="form-uid">
+                    </div>
+                  </div>
+                  <!-- email -->
+                  <div class="form-group row">
+                    <label for="email" class="col-2 col-form-label">電子郵件</label>
+                    <div class="col-4">
+                      <input class="form-control" type="text" value="" id="form-email">
+                    </div>
+                  </div>
+                  <!-- phone -->
+                  <div class="form-group row">
+                    <label for="phone" class="col-2 col-form-label">手機</label>
+                    <div class="col-4">
+                      <input class="form-control" type="text" value="" id="form-phone">
+                    </div>
+                  </div>
+                  <!-- 狀態 -->
+                  <div class="form-group row">
+                    <label for="status">狀態</label>
+                    <select class="form-control" id="form-status">
+                      <option>Open</option>
+                      <option>Pending</option>
+                      <option>Resolved</option>
+                      <option>Closed</option>
+                    </select>
+                  </div>
+                  <!-- 緊急 -->
+                  <div class="form-group row">
+                    <label for="priority">優先</label>
+                    <select class="form-control" id="form-priority">
+                      <option>低</option>
+                      <option>中</option>
+                      <option>高</option>
+                      <option>急</option>
+                    </select>
+                  </div>
+
+                  <!-- 說明 -->
+                  <div class="form-group row">
+                    <label for="description">說明</label>
+                    <textarea class="form-control" id="form-description" rows="3"></textarea>
+                  </div>
+                  <br />
+                  <div id="error" class="error"></div>
+                  <br />
+                  <button type="button" class="btn btn-default" data-dismiss="modal">返回</button>
+                  <button type="button" class="btn btn-success" data-dismiss="modal" id="form-submit">確認</button>
+                  <br />
+                  <br />
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- end表單 -->
+
+    <% include ../views/partials/firebase_disable.ejs %>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/sb-admin-2.js"></script>
+    <script src="javascripts/navigation.js"></script>
+    <script src="javascripts/chat.js"></script>
+    <script src="javascripts/partials/firebase-disable.js"></script>
+
+  </body>
+</html>

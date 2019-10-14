@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+    <%# 自己的code%>
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <!-- <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_overview"> 總覽</a>
+          </li> -->
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div id="home">
+    <h3> 關鍵字回應</h3>
+    <p>新增、編輯、測試傳送到LINE@的訊息</p>
+    <!--     <p>NOTE FOR DEVELOPERS:<br/>
+      1. download CSV file 未做(緩）<br/>
+      2. 時間功能未(緩)  <br/>
+      3. append text msg UI 修改(crashing)<br/>
+      </p> -->
+    <button type="button" class="btn btn-default inner-add" data-toggle="modal" data-target="#quickAdd"><span class="fa fa-plus fa-fw"></span>新增關鍵字</button>
+    <div class="tab" style="width:100%; position:absolute; float:top; margin: 6% 1% 1% 0%; padding:1% 0% 1% 1%;">
+      <table>
+        <tr>
+          <th>下載數據   時間範圍:</th>
+          <td>
+            <form >
+              <input type="datetime-local" id="endDate" style="width:35%;margin:1.5%" >~ <input type="datetime-local" id="endDate" style="width:35%" >
+              <p style="float:right;padding:1.6%"><a id="csv" rel="nocsv">下載CSV檔</a></p>
+              <p id="nocsv" style="color:red; display:none;position:absolute;margin-left: 1%">此功能暫未開通</p>
+            </form>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <section style="float:top; margin:16% 0 0 0 ">
+      <div class="tab">
+        <button style="padding:1.5%;margin:0;" class="tablinks" rel="table">開放</button>
+        <button style="padding:1.5%; margin:0" class="tablinks" rel="tableData">草稿</button>
+      </div>
+    </section>
+    <section>
+      <div style="height:550px;border: solid lightgrey 1px; display: block">
+        <table id="table">
+          <thead>
+            <tr>
+              <th id="th">主關鍵字</th>
+              <th id="th">副關鍵字</th>
+              <th id="th">內容</th>
+              <th id="th">回應數量/ 回應用戶數</th>
+              <th id="th">狀態</th>
+              <th id="th">編輯</th>
+            </tr>
+          </thead>
+          <tbody id="serving">
+          </tbody>
+        </table>
+        <!--  <div style="border: 1px solid #dddddd;
+          height:350px">
+           <p style="float:left; margin-left:40%; margin-top: 16%">No set up keywords.</p>
+          </div>
+          </div>  -->
+        <div id="tableData" style="display:none; border: 1px solid #dddddd;
+          height:550px">
+          <table id="tableData">
+            <thead>
+              <tr>
+                <th id="th">主關鍵字</th>
+                <th id="th">副關鍵字</th>
+                <th id="th">內容</th>
+                <th id="th">回應數量/ 回應用戶數</th>
+                <th id="th">狀態</th>
+                <th id="th">編輯</th>
+              </tr>
+            </thead>
+            <tbody id="waiting"></tbody>
+          </table>
+          <!--  <div style="border: 1px solid #dddddd;
+            height:350px">
+               <p style="float:left; margin-left:40%; margin-top: 16%">No set up keywords.</p>
+
+            </div> -->
+        </div>
+    </section>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="quickAdd" tabindex="-1" role="dialog" aria-labelledby="quickAddTitle" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="quickAddTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Form Content -->
+            <div class="form-group">
+              <label for="modal-task-name" class="col-2 col-form-label">主關鍵字:</label>
+              <div class="col-4">
+                <input class="form-control" type="text" value="" id="modal-mainKey">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="modal-task-name" class="col-2 col-form-label">
+                副關鍵字:
+                <p>可設定多個關鍵字，請用 ',' 隔開，不需空格。範例：你好,哈囉,嗨</p>
+              </label>
+              <div class="col-4">
+                <div class="col-4" id="subKeyCanvas"></div>
+                <input class="form-control" type="text" value="" id="modal-subKey"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="modal-category" class="col-2 col-form-label">狀態:</label>
+              <p class="error_msg" style="color:red;display:none">請選擇狀態</p>
+              <select class="form-control" id="modal-category">
+                <option>狀態</option>
+                <option>開放</option>
+                <option>草稿</option>
+              </select>
+            </div>
+            <!--TEXT AREA -->
+            <div class="form-group">
+              <label for="modal-text">回覆文字:  </label>
+              <div id="text" style="display:block">
+                <input class="form-control" type="text" value=""  id="textinput" style="width:100%;height:100px">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="modal-submit">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- View Modal -->
+    <section>
+      <div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-labelledby="viewModalTitle" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="viewModalTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form>
+                <!-- 主關鍵字 -->
+                <div class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">主關鍵字:  </label>
+                  <span id="view-mainK">-</span>
+                </div>
+                <!-- 副關鍵字 -->
+                <div class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">副關鍵字:  </label>
+                  <span id="view-subK"></span>
+                </div>
+                <!-- 任務內容 -->
+                <div class="form-group">
+                  <label for="task-name" class="col-2 col-form-label">內容:  </label>
+                  <span id="view-textinput"></span>
+                </div>
+                <!-- 狀態 -->
+                <div class="form-group">
+                  <label for="status">狀態:  </label>
+                  <span id="view-stat"></span>
+                </div>
+                <!-- 負責人 -->
+                <div class="form-group">
+                  <label for="owner" class="col-2 col-form-label">負責人:  </label>
+                  <span id="view-owne"></span>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Edit Modal -->
+    <section>
+      <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalTitle" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <!-- 編號 -->
+              <div class="form-group">
+                <label for="task-name" class="col-2 col-form-label">ID</label>
+                <span id="edit-id"></span>
+              </div>
+              <!-- 主關鍵字 -->
+              <div class="form-group">
+                <label for="task-name" class="col-2 col-form-label">主關鍵字:  </label>
+                <input class="form-control" type="text" value="" id="edit-mainK">
+              </div>
+              <!-- 副關鍵字 -->
+              <div class="form-group">
+                <label for="task-name" class="col-2 col-form-label">副關鍵字:  </label>
+                <input class="form-control" type="text" value="" id="edit-subK">
+              </div>
+              <!-- 任務內容 -->
+              <div class="form-group">
+                <label for="edit-task-name" class="col-2 col-form-label">內容:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="text" value="" id="edit-taskContent">
+                </div>
+              </div>
+              <!-- 狀態 -->
+              <div class="form-group">
+                <label for="edit-status">狀態:  </label>
+                <select class="form-control" id="edit-status">
+                  <option>狀態</option>
+                  <option>開放</option>
+                  <option>草稿</option>
+                </select>
+              </div>
+              <!-- 負責人 -->
+              <div class="form-group">
+                <label for="edit-owner" class="col-2 col-form-label">負責人:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="text" value="" id="edit-owner">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="edit-submit">確認</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <style>
+      #table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+      }
+      #th{
+      width:15%;
+      }
+      #td, #th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+      }
+      body {font-family: "Lato", sans-serif;}
+      /* Style the tab */
+      div.tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+      height:auto;
+      }
+      /* Style the buttons inside the tab */
+      div.tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: 0.3s;
+      font-size: 17px;
+      }
+      /* Change background color of buttons on hover */
+      div.tab button:hover {
+      background-color: #ddd;
+      }
+      /* Create an active/current tablink class */
+      div.tab button.active {
+      background-color: #ccc;
+      }
+      /* Style the tab content */
+      .tabcontent {
+      display: none;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+      height:500px;
+      }
+      /* Style the close button */
+      .topright {
+      float: right;
+      cursor: pointer;
+      font-size: 20px;
+      }
+      .topright:hover {color: red;}
+    </style>
+    <% include ../views/partials/firebase_disable.ejs %>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/navigation.js"></script>
+    <script src="javascripts/message_keywordsreply.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="javascripts/partials/firebase-disable.js"></script>
+
+  </body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+    <%# 自己的code%>
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <link rel="stylesheet" href="stylesheets/message_add_friend_reply.css" />
+    <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <!-- <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_overview"> 總覽</a>
+          </li> -->
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div id="home">
+      <h3> 加好友回覆</h3>
+      <p>新增、編輯、測試傳送到LINE@的訊息</p>
+      <table id="MsgCanvas"></table>
+      <table>
+        <td style="padding:5% 5% 5% 15%">
+          <p id="error" style="color:red;display:none;">已經達到訊息則數上限</p>
+          <p>一次可傳送五則訊息，請選擇訊息種類</p>
+          <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">文字</button>
+          <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">貼圖</button>
+          <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">圖片</button>
+          <!-- <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">Coupon</button> -->
+          <!-- <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">投票</button> -->
+          <!-- <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">宣傳</button> -->
+          <!-- <button style="width:20%;margin:0.5%; padding:0.5%; float:left" id="addbtn">調查</button> -->
+        </td>
+      </table>
+      <button id="save"  style="padding:1%; width: 15%; float:left; margin-left:40%; margin-top:1%">儲存</button>
+    </div>
+    <% include ../views/partials/firebase_disable.ejs %>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/navigation.js"></script>
+    <script src="javascripts/message_add_friend_reply.js"></script>
+    <script src="javascripts/partials/firebase-disable.js"></script>
+  </body>
+</html>

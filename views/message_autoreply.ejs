@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title><%= title %></title>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+      <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+      <%# 自己的code%>
+      <link rel="stylesheet" href="stylesheets/main.css" />
+      <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+   </head>
+   <body>
+     <div id="wrapper">
+       <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+         <div class="navbar-header">
+           <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+         </div>
+         <ul class="nav navbar-top-links navbar-left">
+           <li>
+             <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+           </li>
+           <li id="nav_message">
+             <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+           </li>
+           <!-- <li class="sub-tag" style="display:none; font-size: 12px; line-height: auto;">
+             <a href="/message_overview"> 總覽</a>
+           </li> -->
+           <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+             <a href="/message_autoreply"> 自動回覆</a>
+           </li>
+           <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+             <a href="/message_keywordsreply"> 關鍵字回覆</a>
+           </li>
+           <li class="sub-tag"  style="display:none; font-size: 12px; line-height: auto;">
+             <a href="/message_add_friend_reply"> 加好友回覆</a>
+           </li>
+         </ul>
+         <ul class="nav navbar-top-links navbar-right">
+           <li class="dropdown">
+             <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+             <i class="fa fa-cog fa-lg"></i>
+             </a>
+             <ul class="dropdown-menu dropdown-user">
+               <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+               <li class="divider"></li>
+               <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+             </ul>
+           </li>
+         </ul>
+       </nav>
+     </div>
+    <div id="home">
+		<h3> 自動回覆訊息</h3>
+		<p>當用戶對LINE@傳送訊息，訊息將自動回覆</p>
+<!--     <p>
+      NOTE FOR DEVELOPERS:<br/>
+      1. Preview（緩） <br/>
+      2. Modal-set time and date, 三選一(目前只有1有功能)(緩)<br/>
+      3. Modal-text 卡住 一直呈現undefined(緩)<br/>
+      4. 時間功能無法正確寫入，暫時跳過(緩)<br/>
+    </p> -->
+
+
+            <button type="button" class="btn btn-default inner-add" data-toggle="modal" data-target="#quickAdd">
+              <span class="fa fa-plus fa-fw"></span> 新增自動回覆
+            </button>
+<table>
+  <thead>
+  <tr>
+    <th style="width:10%; padding:2%">狀態</th>
+    <th style="width:15%; padding:2%">預約</th>
+    <th style="width:15%; padding:2%">訊息標題</th>
+    <th style="width:20%; padding:2%">有效期限</th>
+    <th style="width:20%; padding:2%">訊息內容</th>
+    <th style="width:15%; padding:2%">編輯/刪除</th>
+  </tr>
+  </thead>
+  <tbody id="autoreply-list">
+  <tr>
+    <td style="width:10%; padding:2%">開放</td>
+    <td style="width:15%; padding:2%">未設定</td>
+    <td style="width:15%; padding:2%"><a href="#">基本</a></td>
+    <td style="width:15%; padding:2%">未指派</td>
+    <td style="width:35%; padding:2%">歡迎來到LINE@</td>
+    <td style="width:15%; padding:2%"><a href="#">刪除</a></td>
+  </tr>
+  </tbody>
+</table>
+<!-- Modal -->
+<div class="modal fade" id="quickAdd" tabindex="-1" role="dialog" aria-labelledby="quickAddTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickAddTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+                <!-- Form Content -->
+                <form>
+                    <div class="form-group">
+                        <label for="modal-task-name" class="col-2 col-form-label">事件名稱(不可重複):</label>
+                        <div class="col-4">
+                            <input class="form-control" type="text" value="" id="modal-task-name">
+                        </div>
+                    </div>
+                    <!-- 分類 -->
+                    <div class="form-group">
+                        <label for="modal-datetime">傳送時間:</label><br>
+                        <form style="padding:3px; height:80px">
+                            <input type="checkbox" name="Dateandtime" value="Time"> 傳送日期: <input type="datetime-local" id="starttime" style="width:35%" />
+                            - <input type="datetime-local" id="endtime" style="width:35%" />
+                            <!-- <br>
+                            <input style="padding:1px" type="checkbox" name="SendNow" value="SendNow"> 每日傳送時間: <input type="datetime-local" id="endDate" style="width:35%" />
+                            <br>
+                            <input type="checkbox" name="SendNow" value="SendNow"> 不設定時間 <br> -->
+                        </form>
+                    </div>
+                    <!--TEXT AREA -->
+                    <div class="form-group">
+                        <label for="modal-text">自動回覆訊息:  </label>
+                        <div id="text" style="display:block">
+                                            <input class="form-control" type="text" value=""  id="enter-text" style="width:50%;height:50px">
+                                        <!-- <button class="tablinks" rel="emos">Emoji</button> -->
+                             <!--EMOJI PLUGINS(UNDONE) -->
+                            <!-- <div id="emos" style="display:none; position:fixed; padding:5%; background-color: lightgrey; width:30%; height:30%">
+                                <button class="tablinks" id="emojis" rel="(moonwink)"><img src="" /></button>
+                            </div> -->
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="modal-submit">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- View Modal -->
+  <section>
+    <div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-labelledby="viewModalTitle" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewModalTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+
+            <form>
+              <!-- 標題 -->
+             <div class="form-group">
+                <label for="task-title" class="col-2 col-form-label">訊息標題:  </label>
+                <span id="view-title"></span>
+              </div>
+              <!-- 開始時間 -->
+              <div class="form-group">
+                <label for="task-time" class="col-2 col-form-label">開始時間:  </label>
+                <span id="view-start"></span>
+              </div>
+              <!-- 結束時間 -->
+              <div class="form-group">
+                <label for="task-time" class="col-2 col-form-label">結束時間:  </label>
+                <span id="view-end"></span>
+              </div>
+              <!-- 任務內容 -->
+              <div class="form-group">
+                <label for="task-name" class="col-2 col-form-label">訊息內容:  </label>
+                <span id="view-textinput"></span>
+              </div>
+              <!-- 負責人 -->
+              <div class="form-group">
+                <label for="owner" class="col-2 col-form-label">負責人:  </label>
+                <span id="view-owner"></span>
+              </div>
+
+            </form>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+    <!-- Edit Modal -->
+  <section>
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalTitle" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalTitle"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+
+            <form>
+              <!-- 編號 -->
+              <div class="form-group">
+                <label for="task-name" class="col-2 col-form-label">ID</label>
+                <span id="edit-id"></span>
+              </div>
+               <!-- 標題 -->
+              <div class="form-group">
+                <label for="edit-task-title" class="col-2 col-form-label">標題:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="text" value="" id="edit-taskTitle">
+                </div>
+              </div>
+              <!-- 開始時間 -->
+              <div class="form-group">
+                <label for="edit-task-time" class="col-2 col-form-label">開始時間:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="datetime-local" id="edit-taskStart" style="width:50%" />
+                  <!--<input class="form-control" type="text" value="" id="edit-taskTime">-->
+                </div>
+              </div>
+              <!-- 結束時間 -->
+              <div class="form-group">
+                <label for="edit-task-time" class="col-2 col-form-label">結束時間:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="datetime-local" id="edit-taskEnd" style="width:50%" />
+                  <!--<input class="form-control" type="text" value="" id="edit-taskTime">-->
+                </div>
+              </div>
+              <!-- 任務內容 -->
+              <div class="form-group">
+                <label for="edit-task-content" class="col-2 col-form-label">訊息內容:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="text" value="" id="edit-taskContent">
+                </div>
+              </div>
+              <!-- 負責人 -->
+              <div class="form-group">
+                <label for="edit-owner" class="col-2 col-form-label">負責人:  </label>
+                <div class="col-4">
+                  <input class="form-control" type="text" value="" id="edit-owner">
+                </div>
+              </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="edit-submit">更改</button>
+          </div>
+          </form>
+        </div>
+      </div>
+    </div>
+</section>
+
+</div>
+
+
+</div>
+<style>
+      table {
+      margin-top:2%;
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+      }
+      th{
+      width:15%;
+      }
+      td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 2%;
+      }
+      body {font-family: "Lato", sans-serif;}
+      /* Style the tab */
+      div.tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+      height:auto;
+      }
+      /* Style the buttons inside the tab */
+      div.tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: 0.3s;
+      font-size: 17px;
+      }
+      /* Change background color of buttons on hover */
+      div.tab button:hover {
+      background-color: #ddd;
+      }
+      /* Create an active/current tablink class */
+      div.tab button.active {
+      background-color: #ccc;
+      }
+      /* Style the tab content */
+      .tabcontent {
+      display: none;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+      height:500px;
+      }
+      /* Style the close button */
+      .topright {
+      float: right;
+      cursor: pointer;
+      font-size: 20px;
+      }
+      .topright:hover {color: red;}
+    </style>
+
+    <% include ../views/partials/firebase_disable.ejs %>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+<script src="config/firebaseConfig.js"></script>
+<script src="javascripts/firebaseAuth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+<script src="javascripts/navigation.js"></script>
+<script src="javascripts/message-autoreply.js"></script>
+<script src="javascripts/partials/firebase-disable.js"></script>
+
+   </body>
+</html>

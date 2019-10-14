@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <title>註冊</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/main.css" />
+  </head>
+  <body class="bg-register">
+    <div class="register-header">
+      <h2>註冊</h2>
+    </div>
+    <div class="container">
+      <form action="" class="form-horizontal">
+        <!-- first name -->
+        <div class="form-group">
+          <label for="inputEmail3" class="col-sm-2 control-label">名</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="first-name" placeholder="名">
+          </div>
+        </div>
+        <!-- last name -->
+        <div class="form-group">
+          <label for="inputEmail3" class="col-sm-2 control-label">姓</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="last-name" placeholder="姓">
+          </div>
+        </div>
+        <!-- Nickname -->
+        <div class="form-group">
+          <label for="inputEmail3" class="col-sm-2 control-label">小名</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="nick" placeholder="小名" required>
+          </div>
+        </div>
+        <!-- username -->
+        <div class="form-group">
+          <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+          <div class="col-sm-10">
+            <input type="email" class="form-control" id="register-email" placeholder="Email" required>
+          </div>
+        </div>
+        <!-- password -->
+        <div class="form-group">
+          <label for="inputPassword3" class="col-sm-2 control-label">密碼</label>
+          <div class="col-sm-10">
+            <input type="password" class="form-control" id="register-password" placeholder="密碼" required>
+          </div>
+        </div>
+        <!-- Sign in Button -->
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-10">
+            <button type="button" class="btn btn-default" id="register-btn">註冊</button>
+          </div>
+        </div>
+        <div class="direct-login">
+          <div>已經有帳號? 請點 <a href="/login">這裡</a> 登入</div>
+        </div>
+      </form>
+      <h3 id="reg-error"></h3>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/signup.js"></script>
+  </body>
+</html>

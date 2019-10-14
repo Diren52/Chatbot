@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link href='stylesheets/fullcalendar.min.css' rel='stylesheet' />
+    <link href='stylesheets/fullcalendar.print.min.css' rel='stylesheet' media='print' />
+    <!-- elaine修改 新增jquery-ui主題-->
+    <link rel="stylesheet" href='https://code.jquery.com/ui/1.12.1/themes/redmond/jquery-ui.css'/>
+    <!--  -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css" >
+    <link rel="stylesheet" href="stylesheets/main.css" >
+  </head>
+  <style type="text/css">
+    #calendar {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 10px;
+    }
+  </style>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <li class="subTag" style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_overview"> 總覽</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div id="calendar-wrap">
+      <div id='calendar'></div>
+    </div>
+    <div class="modal fade" id="myModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"></h5>
+          </div>
+          <div class="modal-body">
+            <!-- 內容 -->
+            <form style="width: 90%;margin: 0 auto;">
+              <span id="keyId" hidden></span><br />
+              <div class="form-group">
+                <input type="text" placeholder="標題" id="title" class="form-control" required="true" style="width:90%"/>
+              </div>
+              <label for="exampleFormControlInput1">開始時間</label>
+              <div class="form-group">
+                <input type="date" id="startDate" class="form-control" required="true" style="display:inline; width: 45% "/>
+                <input type="time" id="startTime" class="form-control" required="true" style="display:inline; width: 45% " />
+              </div>
+              <label for="exampleFormControlInput1">結束時間</label>
+              <div class="form-group">
+                <input type="date" id="endDate" class="form-control" style="display:inline; width: 45% "/>
+                <input type="time" id="endTime" class="form-control" style="display:inline; width: 45% "/>
+              </div>
+              <label class="checkbox-inline">
+              <input type="checkbox" id="allday" value="false" onclick="show_allday()"/>全天
+              </label>
+              <br /><br />
+              <textarea type="text" placeholder="描述" id="description" class="form-control" required="false" rows="6" style="width:90%; resize:vertical;" ></textarea>
+              <br /><br />
+              <div id="cal-error-msg" hidden>請輸入事件名稱、開始時間、結束時間</div>
+              <div id="tim-error-msg" hidden>開始時間不能晚於結束時間</div>
+              <!-- <textarea id="details" placeholder="Details">
+                </textarea> -->
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="add-cal-btn">新增</button>
+            <button type="button" class="btn btn-primary" id="save-cal-btn">確認</button>
+            <button type="button" class="btn btn-primary" id="del-cal-btn">刪除</button>
+            <button type="button" class="btn btn-secondary" id="cls-cal-btn" data-dismiss="modal">取消</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src='javascripts/moment.min.js'></script>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src='javascripts/fullcalendar.min.js'></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="javascripts/cal.js"></script>
+    <script src="javascripts/sb-admin-2.js"></script>
+  </body>
+</html>

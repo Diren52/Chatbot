@@ -1,0 +1,98 @@
+{
+"Data" : [ {
+  "modify" : true,
+  "name" : "姓名",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "電子郵件",
+  "set" : "multi",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "電話",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "年齡",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "性別",
+  "set" : [ "男", "女" ],
+  "type" : "single-select"
+}, {
+  "modify" : true,
+  "name" : "地區",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "住址",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "備註",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "標籤",
+  "set" : [ "奧客", "未付費", "廢話多", "敢花錢", "常客", "老闆的好朋友", "外國人", "窮學生", "花東團abc123", "台南團abc456" ],
+  "type" : "multi-select"
+}, {
+  "modify" : true,
+  "name" : "VIP等級",
+  "set" : [ "鑽石會員", "白金會員", "普通銅牌", "超級普通會員" ],
+  "type" : "single-select"
+}, {
+  "modify" : true,
+  "name" : "下次聯絡客戶時間",
+  "set" : "",
+  "type" : "time"
+}, {
+  "modify" : false,
+  "name" : "首次聊天時間",
+  "set" : "",
+  "type" : "time"
+}, {
+  "modify" : false,
+  "name" : "上次聊天時間",
+  "set" : "",
+  "type" : "time"
+}, {
+  "modify" : false,
+  "name" : "總共聊天時間",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : false,
+  "name" : "聊天次數",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : false,
+  "name" : "平均每次聊天時間",
+  "set" : "single",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "客人的抱怨",
+  "set" : "multi",
+  "type" : "text"
+}, {
+  "modify" : true,
+  "name" : "付費階段",
+  "set" : [ "等待報價", "已完成報價，等待付費", "已完成付費", "要退錢" ],
+  "type" : "single-select"
+}, {
+  "modify" : true,
+  "name" : "指派負責人",
+  "set" : "single",
+  "type" : "text"
+} ]
+}

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+    <link rel="stylesheet" href="stylesheets/main.css">
+    <link rel='stylesheet' href='/stylesheets/ticket.css' />
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <li class="subTag" style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_overview"> 總覽</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="add-btn">
+      <a href="/tform" class="btn btn-default inner-add-complete">
+      <span class="fa fa-plus fa-fw"></span> 新增表單
+      </a>
+    </div>
+    <input type="text" class="ticket_search_bar" id="exampleInputAmount" value="" placeholder="搜尋">
+    <div class="main">
+      <div class="ticket">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortCloseTable(0)"> ID </th>
+              <th onclick="sortCloseTable(1)"> 客戶姓名 </th>
+              <th onclick="sortCloseTable(2)"> 內容 </th>
+              <th onclick="sortCloseTable(3)"> 狀態 </th>
+              <th onclick="sortCloseTable(4)"> 優先 </th>
+              <th onclick="sortCloseTable(5)"> 到期時間 </th>
+            </tr>
+          </thead>
+          <tbody class="ticket-content">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div >
+      <p id="console">
+      </p>
+    </div>
+    <div class="modal fade" id="ticketInfoModal" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <div style="display:flex">
+              <span id="ID_num"></span>
+              <table>
+                <th style="display:none">subject</th>
+                <td class="modal-title edit">User NickName</td>
+              </table>
+            </div>
+          </div>
+          <div class="modal-body">
+            <table class="info_input_table">
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="ticketInfo-delete" class="btn btn-danger" data-dismiss="modal">刪除</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+            <button type="button" id="ticketInfo-submit" class="btn btn-success" data-dismiss="modal">確認</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="javascripts/ticket.js"></script>
+  </body>
+</html>

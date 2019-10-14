@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <title>登入</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://s3.amazonaws.com/icomoon.io/114779/Socicon/style.css?rd5re8">
+    <link rel="stylesheet" href="stylesheets/main.css" />
+  </head>
+  <body class="bg-login">
+    <div class="login-header">
+      <h2>登入</h2>
+    </div>
+    <div class="container">
+      <form class="form-horizontal">
+        <!-- username -->
+        <div class="form-group">
+          <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+          <div class="col-sm-10">
+            <input type="email" class="form-control" id="login-email" placeholder="Email">
+          </div>
+        </div>
+        <!-- password -->
+        <div class="form-group">
+          <label for="inputPassword3" class="col-sm-2 control-label">密碼</label>
+          <div class="col-sm-10">
+            <input type="password" class="form-control" id="login-password" placeholder="密碼">
+          </div>
+        </div>
+        <!-- Sign in Button -->
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-10">
+            <button type="button" class="btn btn-default" id="login-btn">登入</button>
+          </div>
+        </div>
+        <div class="direct-register">
+          <div>還沒有帳號? 請點 <a href="/signup">這裡</a> 註冊帳號</div>
+          <div><a class="login_token" href="">ＬＩＮＥ</a></div>
+        </div>
+      </form>
+      <h3 id="log-error"></h3>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/login.js"></script>
+  </body>
+</html>

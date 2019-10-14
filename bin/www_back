@@ -1,0 +1,3939 @@
+#!/usr/bin/env node
+
+/**
+* Module dependencies.
+*/
+
+// express var
+var app = require('../app');
+var debug = require('debug')('project-shield:server');
+var http = require('http');
+// npm plugins var
+var linebot = require('linebot'); // line串接
+var MessengerPlatform = require('facebook-bot-messenger'); // facebook串接
+var fs = require('fs'); // file system
+var unirest = require('unirest'); // 來單使用套件
+
+var admin = require("firebase-admin"); //firebase admin SDK
+var serviceAccount = require("../config/firebase-adminsdk.json"); //firebase admin requires .json auth
+var databaseURL = require("../config/firebaseAdminDatabaseUrl.js");
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: databaseURL.url
+});
+//提醒事件自動寄信
+var nodemailer = require('nodemailer');
+var transporter = nodemailer.createTransport({ //信箱憑證
+    service: 'gmail',
+    auth: { //此欄位可更改 目前先用我的信箱寄
+        user: '9thflr.wuyuan@gmail.com',
+        pass: 'susan1018'
+    }
+});
+
+// Get port from environment and store in Express.
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+//Create HTTP server.
+var server = http.createServer(app);
+// Listen on provided port, on all network interfaces.
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+//yelp-search
+const yelp = require('yelp-fusion');
+const yelp_id = 'myyIL1Ms5JszMcXodC-o_w';
+const yelp_secret = 'Zw94mu0DGLFSmjG2at4wqSpdxtUC9TrWn6yVYUNhpLEpj4C11tzAPblLXRhpsRLh';
+var yelp_token;
+yelp.accessToken(yelp_id, yelp_secret).then(response => {
+    console.log(response.jsonBody.access_token);
+    yelp_token = response.jsonBody.access_token;
+}).catch(e => {
+    console.log(e);
+});
+//yelp-search
+//抓日期
+let moment = require('moment');
+moment.updateLocale('tw', {
+  weekdays: [
+    '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'
+  ]
+});
+moment.locale('tw');
+//apiai
+var apiai = require('apiai');
+var apiai_app = apiai('a84ed63ae3914a1fb4601f2824d4cabd');
+//LINE
+var addFriendBroadcastMsg; // 加好友參數
+//fb config
+// var fb_bot = MessengerPlatform.create({
+//   pageID: '406189186430126',
+//   appID: '2000856436856651',
+//   appSecret: '8fcb52e0a39a266bad6ea2eae22aa038',
+//   validationToken: 'ee7b84f2219fb9e71738f33ab3c881b0',
+//   pageToken: 'EAAcbxLEqV0sBAB4PEmkhaQRJyRTZBs5fm79r5eRt3hrt82OQ5hlDV4SwxoEzWNO05vpSxrY9czCmPj'+
+//   'WHe63sZA2q3z2Cz6mP8kJs3k9DZCKml1YV4iQkwOuqZBaTdSTsYz9r7fTWzROZBqeBISHJ196FgcVhpuKPyTh5Vp7Cw4QZDZD'
+// });
+//firebase database variables
+const agentDBRef = admin.database().ref().child('chats/AgentChatData');
+var agentChatData;
+agentDBRef.on('value', snapshot=> {
+  if(snapshot.val() !== null){
+    agentChatData = snapshot.val();
+    console.log("agent chat loaded");
+  }
+});
+const newDBRef = admin.database().ref().child('chats/Data');
+var chatData;
+newDBRef.on('value', snapshot=> {
+  let timenow = Date.now();
+  if(snapshot.val() !== null){
+    chatData = snapshot.val();
+    console.log("chat data loading complete!");
+  }
+});
+const tagsRef = admin.database().ref().child('tags');
+var tagsData;
+tagsRef.on('value', snapshot=> {
+  if(snapshot.val() !== null){
+    tagsData = snapshot.val().Data;
+    console.log("tags data loading complete!");
+  }
+  // ...
+});
+const key_word_ref = admin.database().ref().child('message-keywordsreply');
+var key_word_data;
+key_word_ref.on('value', snapshot=> {
+  if(snapshot.val() !== null){
+    key_word_data = snapshot.val();
+    console.log("key word reply data loading complete!");
+  }
+});
+const autoreply_ref = admin.database().ref().child('message-autoreply');
+var autoreply_cond;
+autoreply_ref.on('value', snapshot=> {
+  if(snapshot.val() !== null){
+    autoreply_cond = snapshot.val();
+    console.log("auto reply data loading complete!");
+  }
+});
+//freshdesk設定
+var ticket = {} ;
+var API_KEY = "VAxM08x35ThAOEqIgvOF";
+var FD_ENDPOINT = "fongyu";
+var users = {};
+var agent_nickname = 'agent';
+// LINE bot設定
+var bot = [];
+var linebotParser = [
+  function() {
+    console.log("Enter channel_1 information first");
+  },
+  function() {
+    console.log("Enter channel_2 information first");
+  }
+];
+var channelIds = [-1, -1, -1];
+var keywords = [];
+
+var overview = {};
+
+const io = require('socket.io').listen(server);
+
+
+///////////////// 接收訊息 /////////////////
+//==============FACEBOOK MESSAGE==============
+app.post('/webhook', function (req, res) {
+  var data = req.body;
+  console.log('data on line 91');
+  console.log(data);
+
+  // Make sure this is a page subscription
+  if (data.object === 'page') {
+
+    // Iterate over each entry - there may be multiple if batched
+    data.entry.forEach(function(entry) {
+      var pageID = entry.id;
+      var timeOfEvent = entry.time;
+
+      // Iterate over each messaging event
+      entry.messaging.forEach(function(event) {
+        console.log('this is event');
+        console.log(event);
+        if (event.message) {
+          console.log('Entered');
+          loadFbProfile(event, event.sender.id);
+        }
+        else {
+          console.log("Webhook received unknown event: ", event);
+        }
+      });
+    });
+
+    // Assume all went well.
+    //
+    // You must send back a 200, within 20 seconds, to let us know
+    // you've successfully received the callback. Otherwise, the request
+    // will time out and we will keep trying to resend.
+    res.sendStatus(200);
+  }else{
+    console.log('on line 124');
+  }
+});//app.post
+//==============FACEBOOK MESSAGE END==============
+
+
+//==============LINE MESSAGE==============
+function bot_on_message(event) {
+  let channelId = this.options.channelId; // line群組ID
+  let message_type = event.message.type; // line訊息類別 text, location, image, video...
+  let receiverId = event.source.userId; // line客戶ID
+  let nowTime = Date.now(); // 現在時間
+
+  event.source.profile().then(function(profile) {
+    let receiver_name = profile.displayName; // 客戶姓名
+    let pictureUrl = profile.pictureUrl; // 客戶的profile pic
+    if( receiver_name===undefined ) receiver_name = "userName_undefined";
+    console.log('current ID is: '+receiverId);
+    console.log('current nickname is: '+receiver_name);
+
+    let msgObj = {
+      owner: "user",
+      name: receiver_name,
+      time: nowTime,
+      message: "undefined_message"
+    };
+    let replyMsgObj = {
+      owner: "agent",
+      name: "Auto Reply",
+      time: nowTime,
+      message: "undefined_message"
+    };
+    //  ===================  訊息類別 ==================== //
+    if (message_type === 'sticker') { // 貼圖
+      let packageId = event.message.packageId;
+      let stickerId = event.message.stickerId;
+      msgObj.message = '<img src="https://sdl-stickershop.line.naver.jp/stickershop/v1/sticker/'+stickerId+'/android/sticker.png"' +
+      'width="20%" alt="sticker cant display!"/>';
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+    }
+    else if (message_type === 'location') { // 地點
+      console.log("location");
+      msgObj.message = 'Location received: ';
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+
+      //yelp-search
+      //   setTimeout(() => {
+      //     yelp_client.search({
+      //       term:"八方雲集",//餐廳種類
+      //       locale:'zh_TW', //語系
+      //       location: event.message.address,
+      //     }).then(response => {
+      //       let z = response.jsonBody.businesses[1].name;
+      //       let z2 = response.jsonBody.businesses[2].name;
+      //       let z3 = response.jsonBody.businesses[3].name;
+      //
+      //       let x = response.jsonBody.businesses[1].image_url;
+      //       let x2 = response.jsonBody.businesses[2].image_url;
+      //       let x3 = response.jsonBody.businesses[3].image_url;
+      //
+      //       let y = response.jsonBody.businesses[1].location.display_address;
+      //       let y2 = response.jsonBody.businesses[2].location.display_address;
+      //       let y3 = response.jsonBody.businesses[3].location.display_address;
+      //
+      //       let w = response.jsonBody.businesses[1].url;
+      //       let w2 = response.jsonBody.businesses[2].url;
+      //       let w3 = response.jsonBody.businesses[3].url;
+      //
+      //       let n = response.jsonBody.businesses[1].location;
+      //       msgObj.owner = "agent";
+      //       msgObj.message = '發送地點資訊';
+      //       msgObj.name = "lineBot";
+      //       emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 0);
+      //       event.reply({
+      //         "type": "template",
+      //         "altText": "Welcome Template",
+      //         "template": {
+      //           "type": 'carousel',
+      //           "columns": [
+      //             {
+      //               "thumbnailImageUrl": x,
+      //               "title": z,
+      //               "text": y[0]+y[1],//抓陣列中所需要的值作為字串(因為這裡陣列會無法顯示)
+      //               "actions": [{
+      //                 "type": 'uri',
+      //                 "label": '觀看餐廳資訊',
+      //                 "uri": w
+      //               }]
+      //             },{
+      //               "thumbnailImageUrl": x2,
+      //               "title": z2,
+      //               "text": y2[0]+y2[1],
+      //               "actions": [{
+      //                 "type": 'uri',
+      //                 "label": '觀看餐廳資訊',
+      //                 "uri": w2
+      //               }]
+      //             },{
+      //               "thumbnailImageUrl": x3,
+      //               "title": z3,
+      //               "text": y3[0]+y3[1],
+      //               "actions": [{
+      //                 "type": 'uri',
+      //                 "label": '觀看餐廳資訊',
+      //                 "uri": w3
+      //               }
+      //             ]
+      //           }
+      //         ]
+      //       }
+      //     })
+      //     console.log('z:'+z);
+      //     console.log('x:'+x);
+      //     console.log(n);
+      //   }).catch(e => {
+      //     console.log(e);
+      //   });
+      // }, 2000);
+      //yelp-search
+
+      event.message.content().then(function(content) {
+        let latitude = event.message.latitude;
+        let longitude = event.message.longitude;
+        msgObj.message = '<a target="_blank" href=" https://www.google.com.tw/maps/place/' + content.toString('base64')
+        + '/@' + latitude + ',' + longitude + ',15z/data=!4m5!3m4!1s0x0:0x496596e7748a5757!8m2!3d'
+        + latitude + '!4d' + longitude + '">'+event.message.address+'</a>';
+        console.log(msgObj);
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      }).catch(function(error) {
+        console.log('location error: ' + error);
+      });
+    }//地點
+    else if (message_type === 'image') { // 圖檔
+      msgObj.message = '圖檔已接收，請稍等。';
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      event.message.content().then(function(content) {
+        msgObj.message = '<a href="data:image/png;base64,' + content.toString('base64') + '" ' +
+        ' target="_blank" ><img src="data:image/png;base64,' + content.toString('base64') + '" ' +
+        'width="20%" alt="image embedded using base64 encoding!"/></a>';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      }).catch(function(error) {
+        console.log('image error: ' + error);
+      });
+    }
+    else if (message_type === 'audio') {
+      msgObj.message = '音檔已接收，請稍等。';
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      event.message.content().then(function(content) {
+        // console.log(content.toString('base64'));
+        msgObj.message = '<audio controls><source src="data:audio/mp4;base64,' + content.toString('base64') + '" ' +
+        '" type="audio/mp4"></audio>';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      }).catch(function(error) {
+        // error
+        console.log('audio error: ' + error);
+      });
+    }
+    else if (message_type === 'video') {
+      msgObj.message = '影檔已接收，請稍等。';
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+
+      event.message.content().then(function(content) {
+        // console.log(content.toString('base64'));
+        msgObj.message = '<video width="20%" controls><source src="data:video/mp4;base64,' + content.toString('base64') + '" ' +
+        '" type="video/mp4"></video>';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+
+      }).catch(function(error) {
+        // error
+        console.log('video error: ' + error);
+      });
+    }
+    else if (message_type === 'text' ) { // 判斷連結
+      let message_lineTochat = event.message.text; // line訊息內容
+
+      if( isUrl(message_lineTochat) ) {
+        let urlStr = '<a href=';
+        if (message_lineTochat.indexOf('http') === -1) {
+          urlStr += '"http://';
+        }
+        msgObj.message = urlStr + message_lineTochat + '/" target="_blank">' + message_lineTochat + '</a>';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      }
+      else {
+        msgObj.message = message_lineTochat;
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+
+        //===some auto reply===//
+        if( linebotdemo(message_lineTochat)!==-1 ) {
+          console.log("linebotdemo replyed!");
+          replyMsgObj.name = "Line Bot Demo Reply";
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        }
+        else if( survey(message_lineTochat)!==-1 ) {
+          console.log("survey bot replyed!");
+        }
+        else if( appointment(message_lineTochat)!==-1 ) {
+          console.log("appointment bot replyed!");
+        }
+        else if( commonquestions(message_lineTochat)!==-1 ) {
+          console.log("commonquestions bot replyed!");
+        }
+        else if (keywordsReply(message_lineTochat)!==-1){
+          console.log('keywordsreply bot replied!');
+        }
+        else if( autoReply(message_lineTochat)!==-1 ) {
+          console.log("autoreply bot replyed!");
+        }
+        // else if( apiai(message_lineTochat)!==-1 ) {
+        //   console.log("apiai bot replyed!");
+        // }
+        // else if(){
+        //
+        // }
+        else {
+          console.log("no auto reply bot work! wait for agent reply");
+        }
+        //===auto reply end===//
+      }
+    } //end if message_type = text
+
+    function keywordsReply(msg) {
+      replyMsgObj.name = "KeyWords Reply";
+      let sent = false;
+      console.log("keywordReply execute");
+      for (let i in key_word_data) {
+        for( let j in key_word_data[i] ) {
+          let thisData = key_word_data[i][j];
+          if(thisData.taskCate=="開放") {
+            let keywords = JSON.parse(JSON.stringify(thisData.taskSubK));
+            keywords.push(thisData.taskMainK);
+            keywords.map(function(word) {
+              if( msg.trim().toLowerCase() == word.trim().toLowerCase() ) {
+                sent = true;
+                for( let k in thisData.taskText ) {
+                  replyMsgObj.message = thisData.taskText[k];
+                  emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 1);
+                  send_to_Line(thisData.taskText[k], receiverId, channelId);
+                }
+              }
+            });
+          }
+        }
+      }
+      if( !sent ) return -1;
+    }
+
+    function autoReply(msg){
+      replyMsgObj.name = "Auto Reply";
+      console.log("autoReply execute");
+      //console.log('autoReply function in!');
+      sent = false;
+      for(let i in autoreply_cond) {
+        for( let j in autoreply_cond[i] ) {
+          thisAutoReply = autoreply_cond[i][j];
+          console.log(thisAutoReply);
+          var starttime = new Date(thisAutoReply.taskStart).getTime() - 60*60*1000*8; //time需要轉換成毫秒並減去8小時
+          var endtime = new Date(thisAutoReply.taskEnd).getTime() - 60*60*1000*8; //time需要轉換成毫秒並減去8小時
+          var nowtime = new Date().getTime();
+          console.log(starttime+' '+endtime+' '+nowtime);
+          if(nowtime >= starttime && nowtime < endtime){
+            //console.log('Enter if!');
+            replyMsgObj.message = thisAutoReply.taskText;
+            emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 1);
+            send_to_Line(thisAutoReply.taskText, receiverId, channelId);
+            sent = true;
+          }
+        }
+      }
+      if( !sent ) return -1;
+    }
+    // functions
+
+    function overviewReply(){
+      for (var i in overview){
+        console.log(i);
+        switch(msg.trim()){
+          case i:
+          obj = {
+            msg: keywords[i],
+            id: receiverId,
+            channelId: channelId,
+            msgtime: nowTime
+          };
+          // emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+          console.log('to reply keywords to front...');
+          io.sockets.emit('reply keywords to front',obj);
+          console.log('sent to chat.js');
+        }
+      }
+    }
+
+    // functions
+    function linebotdemo(msg){
+      console.log("linebotdemo execute");
+      msg = msg.trim();
+
+      if( msg=='查詢地點DEMO' ) {
+        replyMsgObj.message = '請選擇，你想查尋最近的地點的目標';
+        event.reply({
+          "type": "template",
+          "altText": "this is a buttons template",
+          "template": {
+            "type": "buttons",
+            "title": replyMsgObj.message,
+            "text": " ",
+            "actions": [{
+              "type": "message",
+              "label": "八方雲集",
+              "text": "八方雲集"
+            }, {
+              "type": "message",
+              "label": "花旗銀行",
+              "text": "花旗銀行"
+            }]
+          }
+        });
+      }
+      else if( msg=='八方雲集' ) {
+        // let yelp = ('感謝您使用挑餐廳的功能!\n傳送你的位置給我，便會告訴你最近的三家餐廳。');
+        zxc = "八方雲集";
+        replyMsgObj.message = '感謝您使用挑餐廳的功能!\n傳送你的位置給我，便會告訴你最近的三家餐廳。';
+        event.reply(
+          {
+            type: 'text',
+            text: replyMsgObj.message
+          }, {
+            type: 'text',
+            text: replyMsgObj.message
+          }
+        );
+      }
+      else if( msg=="花旗銀行" ) {
+        // let yelp = ('感謝您使用挑餐廳的功能!\n傳送你的位置給我，便會告訴你最近的三家銀行。');
+        zxc = "花旗銀行";
+        replyMsgObj.message = '感謝您使用挑餐廳的功能!\n傳送你的位置給我，便會告訴你最近的三家銀行。';
+        event.reply(
+          {
+            type: 'text',
+            text: replyMsgObj.message
+          }, {
+            type: 'text',
+            text: replyMsgObj.message
+          }
+        );
+      }
+      else if( msg=='旅遊' ) {
+        replyMsgObj.message = '查看國內外的旅遊資訊';
+        event.reply({
+          "type": "template",
+          "altText": "this is a buttons template",
+          "template": {
+            "type": "buttons",
+            "title": "查看國內外的旅遊資訊",
+            "text": " ",
+            "actions": [{
+              "type": "message",
+              "label": "國外旅遊",
+              "text": '國外旅遊'
+            }, {
+              "type": "message",
+              "label": "國內旅遊",
+              "text": "國內旅遊"
+            }]
+          }
+        });
+      }
+      else if( msg=='國外旅遊' ) {
+        replyMsgObj.message = '國外旅遊資訊介紹。';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            type: 'carousel',
+            "columns": [{
+              "title": '國外旅遊資訊介紹。',
+              "text": '請選擇以下行程，查詢行程費用以及相關資訊。',
+              "actions": [{
+                "type": "message",
+                "label": '斯洛維尼亞',
+                "text": "斯洛維尼亞",
+              }, {
+                "type": "message",
+                "label": '馬爾地夫',
+                "text": "馬爾地夫"
+              }, {
+                "type": "message",
+                "label": '埃及',
+                "text": "埃及"
+              }]
+            }, {
+              "title": '國外旅遊資訊介紹。',
+              "text": '請選擇以下行程，查詢行程費用以及相關資訊。',
+              "actions": [{
+                "type": "message",
+                "label": '杜拜',
+                "text": "杜拜"
+              }, {
+                "type": "message",
+                "label": '紐西蘭',
+                "text": "紐西蘭"
+              }, {
+                "type": "message",
+                "label": '蒙古',
+                "text": "蒙古"
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='國內旅遊' ) {
+        replyMsgObj.message = '國內旅遊資訊介紹。';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "title": '國內旅遊資訊介紹。',
+              "text": '請選擇以下行程，查詢行程費用以及相關資訊。',
+              "actions": [
+                {
+                  "type": "message",
+                  "label": '台南、奇美博物館',
+                  "text": "台南、奇美博物館",
+                },
+                {
+                  "type": "message",
+                  "label": '溪頭、杉林溪、米堤飯店',
+                  "text": "溪頭、杉林溪、米堤飯店"
+                },
+                {
+                  "type": "message",
+                  "label": '花東桂田喜來登',
+                  "text": "花東桂田喜來登"
+                }
+              ]
+            }]
+          }
+        });
+      }
+      else if( isPlace(msg) ) {
+        let title="";
+        let uri="";
+        if( msg=='斯洛維尼亞' ) {
+          title='斯洛維尼亞藍湖、克羅埃西亞十六湖公園 雙國湖景10天7夜仙境之旅';
+          uri="croatia";
+        }
+        else if( msg=="馬爾地夫" ) {
+          title="馬爾地夫OZEN奧臻島渡假村、海底餐廳饗宴、6天4夜浪漫海島之旅";
+          uri="maldives-ozen";
+        }
+        else if( msg=="埃及" ) {
+          title="神秘金字塔、開羅會議百年皇宮、河輪漫遊尼羅河13天10夜埃及尋寶之旅";
+          uri="egypt";
+        }
+        else if( msg=="杜拜" ) {
+          title="遊杜拜、阿布達比、水上飛機、沙漠衝沙、住帆船飯店8天5夜鑽石黃金之旅";
+          uri="dubai3";
+        }
+        else if( msg=="紐西蘭" ) {
+          title="紐西蘭峽灣美景、螢火蟲洞遊船、夜遊魔戒哈比屯11天8夜南北島奇幻之旅";
+          uri="newzealand";
+        }
+        else if( msg=="蒙古" ) {
+          title="蒙古烏蘭巴托、巴彥戈壁、成吉思汗8天7夜游牧驚奇之旅（蒙古航空）";
+          uri="mongolia8d";
+        }
+        else if( msg=='花東桂田喜來登' ) {
+          title="花東桂田喜來登尊爵之旅3天2夜";
+          uri="hualien-taitung";
+        }
+        else if( msg=='溪頭、杉林溪、米堤飯店' ) {
+          title="溪頭、杉林溪、米堤飯店商務豪華之旅2天1夜";
+          uri="nantou";
+        }
+        else if( msg=='台南、奇美博物館' ) {
+          title="台南、奇美博物館商務豪華驚奇之旅2天1夜";
+          uri="tainan";
+        }
+        replyMsgObj.message = title;
+        event.reply({
+          "type": "template",
+          "altText": "this is a buttons template",
+          "template": {
+            "type": "buttons",
+            "title": title,
+            "text": " ",
+            "actions": [
+              {
+                "type": "uri",
+                "label": "旅程介紹",
+                "uri": "https://tw.taiwanviptravel.com/"+uri
+              }, {
+                "type": "uri",
+                "label": "報名",
+                "uri": "https://tw.taiwanviptravel.com/"+uri+"/#tourlist"
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='Demo' ) {
+        replyMsgObj.message = 'Demo列表';
+        event.reply({
+          "type": "template",
+          "altText": "this is a buttons template",
+          "template": {
+            "type": "buttons",
+            "title": "其他功能介紹",
+            "text": "八方雲集/花旗銀行位置查詢\n嘿鬥餐廳菜單及訂位\n",
+            "actions": [
+              {
+                "type": "message",
+                "label": "查詢地點DEMO",
+                "text": '查詢地點DEMO'
+              },
+              {
+                "type": "message",
+                "label": "餐廳訂位",
+                "text": "菜單功能"
+              },
+              {
+                "type": "message",
+                "label": "衣服購物",
+                "text": "購物車功能"
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='Tini小精靈' ) {
+        replyMsgObj.message = 'Tini小精靈列表';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            type: 'carousel',
+            "columns": [
+              {
+                "thumbnailImageUrl": 'https://7-t.imgbox.com/GEduM2tI.jpg',
+                "title": '請選擇以下服務。',
+                "text": '由Tini小精靈幫您快速排解問題!',
+                "actions": [
+                  {
+                    "type": "message",
+                    "label": '問題分類',
+                    "text": "問題分類"
+                  },
+                  {
+                    "type": "message",
+                    "label": '購買方案',
+                    "text": "購買方案"
+                  },
+                  {
+                    "type": "message",
+                    "label": '公司資訊',
+                    "text": "公司資訊"
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://6-t.imgbox.com/4gj9qJm7.jpg',
+                "title": '功能示範DEMO系列',
+                "text": '菜單/購物車/問卷 功能',
+                "actions": [
+                  {
+                    "type": "message",
+                    "label": '菜單功能',
+                    "text": "菜單功能"
+                  },
+                  {
+                    "type": "message",
+                    "label": '購物車功能',
+                    "text": "購物車功能"
+                  },
+                  {
+                    "type": "message",
+                    "label": '問卷功能',
+                    "text": "問卷功能"
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://s3-media4.fl.yelpcdn.com/bphoto/k4lpLYvXyUrscEowoiO9hg/o.jpg',
+                "title": '功能示範DEMO系列',
+                "text": '餐廳搜尋 功能',
+                "actions": [
+                  {
+                    "type": "message",
+                    "label": '查詢地點DEMO',
+                    "text": "查詢地點DEMO"
+                  },
+                  {
+                    "type": "message",
+                    "label": '預約DEMO',
+                    "text": "預約DEMO"
+                  },
+                  {
+                    "type": "message",
+                    "label": '回饋問卷',
+                    "text": "回饋問卷"
+                  }
+                ]
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='董事長遊台灣菜單' ) {
+        replyMsgObj.message = "董事長遊台灣列表";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            type: 'carousel',
+            "columns": [
+              {
+                "thumbnailImageUrl": 'https://7-t.imgbox.com/zLJGgNrj.jpg',
+                "title": '董事長遊台灣',
+                "text": '常見問題/旅遊菜單/回饋問卷',
+                "actions": [
+                  {
+                    "type": "message",
+                    "label": '常見問題',
+                    "text": "常見問題"
+                  },
+                  {
+                    "type": "message",
+                    "label": '旅遊菜單',
+                    "text": "旅遊"
+                  },
+                  {
+                    "type": "message",
+                    "label": '回饋問卷',
+                    "text": "回饋問卷"
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://8-t.imgbox.com/cEoYf9AJ.jpg',
+                "title": '董事長遊台灣',
+                "text": '旅遊預約/公司資訊',
+                "actions": [
+                  {
+                    "type": "message",
+                    "label": '旅遊預約',
+                    "text": "旅遊預約"
+                  },
+                  {
+                    "type": "message",
+                    "label": '公司資訊',
+                    "text": "公司資訊"
+                  },
+                  {
+                    "type": "message",
+                    "label": '-',
+                    "text": " "
+                  }
+                ]
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='公司資訊' ) {
+        replyMsgObj.message = '希羅亞旅行社股份有限公司\n地址:\n台灣台北市大安區\n復興南路一段137號7樓之7\n'
+        +'服務時間:\n週一～週五 09:00-18:30\n電話:02-27217300\n傳真:02-27217179\n信箱:service@taiwanday.com\n'
+        +'代表人:戴東華\n聯絡人:劉淑枚';
+        event.reply({
+          type: 'text',
+          text: replyMsgObj.message
+        });
+      }
+      else if( msg=='回饋問卷' ) {
+        replyMsgObj.message = '問卷發送';
+        event.reply({
+          "type": "template",
+          "altText": "行程相關問題/服務滿意度調查",
+          "template": {
+            "type": "confirm",
+            "text": "麻煩您，撥冗填答案本問卷，提供您的寶貴意見，做為日後本公司旅遊整體規劃與服務改善的重要參考。",
+            "actions": [
+              {
+                "type": "message",
+                "label": "行程相關問題",
+                "text": "行程相關問題"
+              },
+              {
+                "type": "message",
+                "label": "滿意度",
+                "text": "滿意度"
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='常見問題' ) {
+        replyMsgObj.message = '常見問題列表';
+        event.reply({
+          "type": "template",
+          "altText": "this is a buttons template",
+          "template": {
+            "type": "buttons",
+            "title": "常見問題",
+            "text": "參考Line 回應客人的事項\n海外部分,請參閱海外教案",
+            "actions": [
+              {
+                "type": "message",
+                "label": "基本問題",
+                "text": '基本問題'
+              },
+              {
+                "type": "message",
+                "label": "特殊問題",
+                "text": "特殊問題"
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='菜單功能' ) {
+        replyMsgObj.message = '菜單功能列表';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": "buttons",
+            "thumbnailImageUrl": "https://0-t.imgbox.com/Mim9D7AP.jpg",
+            "title": "哈囉!\n歡迎來到嘿鬥，請你選擇底下的選項。",
+            "text": '菜單功能',
+            "actions": [
+              {
+                "type": "uri",
+                "label": "餐廳官網",
+                "uri": "http://www.ha-to.com.tw/"
+              },
+              {
+                "type": "message",
+                "label": "餐廳菜單",
+                "text": "餐廳菜單"
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='餐廳菜單' ) {
+        replyMsgObj.message = '餐廳菜單列表';
+        // let greet_msg = '餐廳菜單';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": "buttons",
+            "thumbnailImageUrl": "https://0-t.imgbox.com/JJO1jat5.jpg",
+            "title": "請問你查看什類型的定食？",
+            "text": '餐廳菜單',
+            "actions": [
+              {
+                "type": "message",
+                "label": "炸豬排定食",
+                "text": "炸豬排定食"
+              },
+              {
+                "type": "message",
+                "label": "海陸烤炸定食",
+                "text": "海陸烤炸定食"
+              },
+              {
+                "type": "message",
+                "label": "燒煲定食",
+                "text": "燒煲定食"
+              }
+
+            ]
+          }
+        });
+      }
+      else if( msg=='燒煲定食' ) {
+        replyMsgObj.message = '燒煲定食列表';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [
+              {
+                "thumbnailImageUrl": 'https://0-t.imgbox.com/1duVl5CJ.jpg',
+                "title": '薑汁燒肉定食',
+                "text": '289元',
+                "actions": [
+                  {
+                    "type": 'uri',
+                    "label": '前往訂位',
+                    "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://7-t.imgbox.com/R2PZXeFo.jpg',
+                "title": '焗燒起司唐揚雞定食',
+                "text": '299元',
+                "actions": [
+                  {
+                    "type": 'uri',
+                    "label": '前往訂位',
+                    "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://9-t.imgbox.com/kl2P3DgM.jpg',
+                "title": '風味炒雞肉定食',
+                "text": '309元',
+                "actions": [
+                  {
+                    "type": 'uri',
+                    "label": '前往訂位',
+                    "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+                  }
+                ]
+              }, {
+                "thumbnailImageUrl": 'https://3-t.imgbox.com/5WEzkwgk.jpg',
+                "title": '野菇燒煲定食定食(素)',
+                "text": '279元',
+                "actions": [
+                  {
+                    "type": 'uri',
+                    "label": '前往訂位',
+                    "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+                  }
+                ]
+              },
+              {
+                "thumbnailImageUrl": 'https://7-t.imgbox.com/BHnmsW3F.jpg',
+                "title": '北海道極品海煲定食',
+                "text": '399元',
+                "actions": [
+                  {
+                    "type": 'uri',
+                    "label": '前往訂位',
+                    "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+                  }
+                ]
+              }
+            ]
+          }
+        });
+      }
+      else if( msg=='海陸烤炸定食' ) {
+        replyMsgObj.message = '海陸烤炸定食列表';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://8-t.imgbox.com/4ZDoCORx.jpg',
+              "title": '和風炸雞腿定食',
+              "text": '289元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://6-t.imgbox.com/ig3jEWZ5.jpg',
+              "title": '南蠻炸雞定食',
+              "text": '299元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://6-t.imgbox.com/a45I2TUs.jpg',
+              "title": '信州味噌雞燒定食',
+              "text": '299元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://1-t.imgbox.com/VzHBr5cD.jpg',
+              "title": '日式塔醬竹莢揚物定食',
+              "text": '299元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://3-t.imgbox.com/04EmhHuO.jpg',
+              "title": '海陸組合定食',
+              "text": '329元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='炸豬排定食' ) {
+        replyMsgObj.message = '炸豬排定食列表';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://7-t.imgbox.com/hTnKViSP.jpg',
+              "title": '炸里肌肉豬排定食',
+              "text": '269元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://2-t.imgbox.com/CQtDUIb4.jpg',
+              "title": '炸腰內肉豬排定食',
+              "text": '269元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://8-t.imgbox.com/eovywVkf.jpg',
+              "title": '炸起司豬排定食',
+              "text": '309元',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往訂位',
+                "uri": 'https://tw.eztable.com/restaurant/13419?from_type=search'
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='購物車功能' ) {
+        replyMsgObj.message = '已接收顯示購物車功能' + "女裝  " + "男裝  ";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": "buttons",
+            "text": '你想找哪一類的衣服呢？',
+            "actions": [{
+              "type": "message",
+              "label": "女裝",
+              "text": "女裝"
+            },
+            {
+              "type": "message",
+              "label": "男裝",
+              "text": "男裝"
+            }]
+          }
+        });
+      }
+      else if( msg=='女裝' ) {
+        replyMsgObj.message = '已接收顯示女裝' + "女裝POLO衫  " + "女裝T恤(長袖/七分袖)";
+        // let greet_msg = '你想找哪一類的衣服呢？';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": "buttons",
+            "thumbnailImageUrl": "https://3-t.imgbox.com/ZnXsAKmo.jpg",
+            "text": '你想找哪一類的衣服呢？',
+            "actions": [{
+              "type": "message",
+              "label": "女裝POLO衫",
+              "text": "女裝POLO衫"
+            },
+            {
+              "type": "message",
+              "label": "女裝T恤(長袖/七分袖)",
+              "text": "女裝T恤(長袖/七分袖)"
+            }]
+          }
+        });
+      }
+      else if( msg=='男裝' ) {
+        replyMsgObj.message = '已接收顯示男裝' + "男裝POLO衫  " + "男裝牛仔褲  ";
+        // let greet_msg = '你想找哪一類的衣服呢？';
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": "buttons",
+            "thumbnailImageUrl": "https://0-t.imgbox.com/urSn5N9M.jpg",
+            "text": '你想找哪一類的衣服呢？',
+            "actions": [{
+              "type": "message",
+              "label": "男裝POLO衫",
+              "text": "男裝POLO衫"
+            },
+            {
+              "type": "message",
+              "label": "男裝牛仔褲",
+              "text": "男裝牛仔褲"
+            }]
+          }
+        });
+      }
+      else if( msg=='女裝POLO衫' ) {
+        replyMsgObj.message = '已接收顯示女裝POLO衫' + "彈性網眼POLO衫(女)" + "寬版開領POLO衫(女)" + "羅紋POLO衫(短袖)(女)";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://7-t.imgbox.com/7ldQdjRB.jpg',
+              "title": '彈性網眼POLO衫(女)',
+              "text": 'NT$590',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/addcart/goods/182222-69'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://7-t.imgbox.com/mNhSZSKr.jpg',
+              "title": '寬版開領POLO衫(女)',
+              "text": 'NT$590',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/188203'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://6-t.imgbox.com/T5AWfToR.jpg',
+              "title": '羅紋POLO衫(短袖)(女)',
+              "text": 'NT$390',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/193086'
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='女裝T恤(長袖/七分袖)' ) {
+        replyMsgObj.message = '已接收女裝T恤' + "一字領上衣T恤(女)" + "SUPIMA COTTON 圓領T恤(7分袖)(女)"
+         + "SUPIMA COTTON 圓領T恤(長袖)(女)";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://9-t.imgbox.com/IqZyIqGX.jpg',
+              "title": '一字領上衣T恤(女)',
+              "text": 'NT$590',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/199888'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://6-t.imgbox.com/gDRPXNSC.jpg',
+              "title": 'SUPIMA COTTON 圓領T恤(7分袖)(女)',
+              "text": 'NT$390',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/182153'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://0-t.imgbox.com/q7MCHAQR.jpg',
+              "title": 'SUPIMA COTTON 圓領T恤(長袖)(女)',
+              "text": 'NT$390',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/182154'
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='男裝POLO衫' ) {
+        replyMsgObj.message = '已接收顯示男裝POLO衫' + "DRY 網眼條紋POLO衫(短袖)(男)" + "DRY EX POLO衫(短袖)(男)"
+         + "DRY 舒適襯衫領POLO衫(短袖)(鈕釦領)(男)";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://8-t.imgbox.com/RNwQRq98.jpg',
+              "title": 'DRY 網眼條紋POLO衫(短袖)(男)',
+              "text": 'NT$790',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/195393'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://9-t.imgbox.com/Htmjhe7W.jpg',
+              "title": 'DRY EX POLO衫(短袖)(男)',
+              "text": 'NT$790',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/169372'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://2-t.imgbox.com/LSYcL4tL.jpg',
+              "title": 'DRY 舒適襯衫領POLO衫(短袖)(鈕釦領)(男)',
+              "text": 'NT$790',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/193623'
+              }]
+            }]
+          }
+        });
+      }
+      else if( msg=='男裝牛仔褲' ) {
+        replyMsgObj.message = '已接收顯示男裝牛仔褲' + "Slim Fit 束口牛仔褲(男)" + "Regular Fit 刷破牛仔褲(男)"
+         + "MIRACLE AIR REGULAR FIT 牛仔褲(男)";
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "thumbnailImageUrl": 'https://6-t.imgbox.com/BHbTLzct.jpg',
+              "title": 'Slim Fit 束口牛仔褲(男)',
+              "text": 'NT$990',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/183006'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://7-t.imgbox.com/fsfzvmNz.jpg',
+              "title": 'Regular Fit 刷破牛仔褲(男)',
+              "text": 'NT$1490',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/192943'
+              }]
+            }, {
+              "thumbnailImageUrl": 'https://2-t.imgbox.com/1CY1M5aq.jpg',
+              "title": 'MIRACLE AIR REGULAR FIT 牛仔褲(男)',
+              "text": 'NT$1490',
+              "actions": [{
+                "type": 'uri',
+                "label": '前往購物車',
+                "uri": 'http://www.uniqlo.com/tw/store/goods/403888'
+              }]
+            }]
+          }
+        });
+      }
+      else return -1;
+
+      function isPlace(str) {
+        return str=="斯洛維尼亞" || str=="馬爾地夫" || str=="埃及" || str=="杜拜" || str=="紐西蘭" || str=="蒙古"
+        || str=="花東桂田喜來登" || str=="溪頭、杉林溪、米堤飯店" || str=="台南、奇美博物館";
+      }
+    } // end of linebotdemo
+    function survey(msg){
+      console.log("survey execute");
+      replyMsgObj.name = "Survey Reply";
+
+      let voter = receiverId;
+      let groupName = "台北TPE"
+
+      function ask_vote(n, categoryName, workerName, groupName) {
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "title": groupName,
+              "text": categoryName + ':' + workerName,
+              "actions": [{
+                "type": "message",
+                "label": '非常滿意',
+                "text": "S"+n+"-5"
+              }, {
+                "type": "message",
+                "label": '滿意',
+                "text": "S"+n+"-4"
+              }, {
+                "type": "message",
+                "label": '普通',
+                "text": "S"+n+"-3"
+              }]
+            }, {
+              "title": groupName,
+              "text": categoryName + ':' + workerName,
+              "actions": [{
+                "type": "message",
+                "label": '不滿意',
+                "text": "S"+n+"-2"
+              }, {
+                "type": "message",
+                "label": '非常不滿意',
+                "text": "S"+n+"-1"
+              }, {
+                "type": "message",
+                "label": '-',
+                "text": "-"
+              }]
+            }]
+          }
+        });
+      }
+
+      if(msg.trim() === '滿意度'){
+        categoryName = '秘書';
+        workerName = '楊靜嫻';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(1, categoryName, workerName, '台北TPE');
+      }
+      else if(msg.indexOf('S1-')==0){
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "秘書", "楊靜嫻", groupName, score);
+
+        categoryName = '司機';
+        workerName = '百俊';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(2, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S2-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "司機", "百俊", groupName, score);
+
+        categoryName = '攝影師';
+        workerName = '劉育昇';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(3, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S3-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "攝影師", "劉育昇", groupName, score);
+
+        categoryName = '客服';
+        workerName = '客服人員';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(4, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S4-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "客服", "客服人員", groupName, score);
+
+        categoryName = '導遊';
+        workerName = '魏清水';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(5, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S5-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "導遊", "魏清水", groupName, score);
+
+        categoryName = '導遊';
+        workerName = '陳仕賢';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(6, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S6-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "導遊", "陳仕賢", groupName, score);
+
+        categoryName = '餐廳';
+        workerName = '魔菇部落';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(7, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S7-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "餐廳", "魔菇部落", groupName, score);
+
+        categoryName = '餐廳';
+        workerName = '黑公雞風味餐廳';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(8, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S8-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "餐廳", "黑公雞風味餐廳", groupName, score);
+
+        categoryName = '餐廳';
+        workerName = '宏銘的廚房';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(9, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S9-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "餐廳", "宏銘的廚房", groupName, score);
+
+        categoryName = '餐廳';
+        workerName = '喆娟夢田';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(10, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S10-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "餐廳", "喆娟夢田", groupName, score);
+
+        categoryName = '伴手禮';
+        workerName = '卦山燒';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(11, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S11-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "伴手禮", "卦山燒", groupName, score);
+
+        categoryName = '飯店';
+        workerName = '彰化福泰飯店';
+        replyMsgObj.message = categoryName + ": " + workerName;
+        ask_vote(12, categoryName, workerName, '台北TPE');
+      }
+      else if (msg.indexOf('S12-')==0) {
+        let score = parseInt( msg.substr(3) );
+        vote_to_mysql(voter, nowTime, "飯店", "彰化福泰飯店", groupName, score);
+
+        replyMsgObj.message = '感謝您的回饋！';
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        event.reply({
+          type: 'text',
+          text: '感謝您的回饋！'
+        });
+      }
+      else if (msg.trim() === '行程相關問題') {
+        ask_info(0);
+      }
+      else if( msg.indexOf('P1-')==0 ) {
+        ask_info(1);
+      }
+      else if( msg.indexOf('P2-')==0 ) {
+        ask_info(2);
+      }
+      else if( msg.indexOf('P3-')==0 ) {
+        ask_info(3);
+      }
+      else if( msg.indexOf('P4-')==0 ) {
+        ask_info(4);
+      }
+      else {
+        return -1;
+      }
+      function ask_info(n) {
+        let title = [
+          "您如何得知此次旅遊行程", "您第幾次參加本公司行程",
+          "您再次參加本公司行程原因","您此次旅遊行程幾人同行"
+        ];
+        let option = [
+          ["網站", "FB", "親友介紹", "從雙月刊", "員旅", "其他"],
+          ["第一次", "第二次", "第三次", "第四次", "五次以上", "-"],
+          ["服務品質好", '行程地點優', '其他', "-", "-", "-"],
+          ["1人", "2人", "3人", "4人", "5人以上", "-"]
+        ];
+        if( n==0 ) {
+          //第一次問問題
+          replyMsgObj.message = '行程相關列表已發送';
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        }
+        else {
+          //非第一次問問題，須把上次答案push進資料庫
+          let updateInfo = {};
+          _title = title[n-1];
+          _answer = msg;
+          updateInfo[ _title ] = _answer;
+          for (let i in chatData) {
+            if ( isSameUser(chatData[i].Profile, receiverId, channelId) ) {
+              newDBRef.child(i).child("Profile").update(updateInfo);
+              break;
+            }
+          }
+          replyMsgObj.message = '客戶點選' + msg;
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        }
+        if( n<4 ) {
+          //非最後一次問問題，需問下一道問題
+          replyMsgObj.message = title[n];
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+
+          let actions_1 = [], actions_2 = [];
+          for( let i=0; i<3; i++ ) {
+            actions_1.push({
+              "type": "message",
+              "label": option[n][i],
+              "text": "P"+(n+1)+"-"+option[n][i]
+            });
+          }
+          for( let i=3; i<6; i++ ) {
+            actions_2.push({
+              "type": "message",
+              "label": option[n][i],
+              "text": "P"+(n+1)+"-"+option[n][i]
+            });
+          }
+          event.reply({
+            "type": "template",
+            "altText": "Welcome Template",
+            "template": {
+              type: 'carousel',
+              "columns": [
+                {
+                  "title": title[n],
+                  "text": '--------------------------------------------------',
+                  "actions": actions_1
+                },
+                {
+                  "title": title[n],
+                  "text": '--------------------------------------------------',
+                  "actions": actions_2
+                }
+              ]
+            }
+          });
+        }
+        else if( n==4 ) {
+          replyMsgObj.message = '感謝您的回饋！';
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+          event.reply({
+            type: 'text',
+            text: '感謝您的回饋！'
+          });
+        }
+      }
+    } // end of survey
+    function vote_to_mysql(voter, time, categoryName, workerName, groupName, score) {
+      console.log(time);
+      let categoryId;
+      let workerId;
+      let groupId;
+
+      let timer = setInterval(insert_vote, 10);
+      //因前面幾個資料庫操作是異步操作 可能會發生還沒抓完資料就繼續執行的情況
+      //所以用setInterval包起來，確認值都有收到後，再寫進資料庫並停止setInterval
+      function insert_vote() {
+        if (!categoryId || !workerId || !groupId) return;
+        clearInterval(timer);
+        let obj = {
+          vote_voter: voter,
+          vote_time: time,
+          category_id: categoryId,
+          worker_id: workerId,
+          group_id: groupId,
+          vote_score: score
+        };
+        console.log("to insert obj = ");
+        console.log(obj);
+
+        // con.query("INSERT INTO shield.vote SET ? ", obj, function(err, rows) {
+        //     if (err) {
+        //         console.log("ERROR INSERT VOTE");
+        //         throw err;
+        //     }
+        // else {
+        //         console.log("SUCCESS INSERT VOTE! obj =");
+        //         console.log(obj);
+        //     } //end else
+        // }); //end con.query
+      } //end insert_vote
+    } // end of vote_to_mysql
+    function appointment(msg){
+      console.log("appointment execute");
+      replyMsgObj.name = "Appointment Reply";
+
+      if (msg.trim() === '旅遊預約') {
+        replyMsgObj.message = '已接收顯示預約日期';
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": [{
+              "title": '斯洛維尼',
+              "text": "10/16團-$168,888/位\n11/27團-$156,888/位\n2018/1/29團-$156,888/位",
+              "actions": [{
+                "type": "message",
+                "label": "斯洛維尼亞10/16~10/25",
+                "text": "斯洛維尼亞10/16~10/25"
+              }, {
+                "type": "message",
+                "label": "斯洛維尼亞11/27~12/06",
+                "text": "斯洛維尼亞11/27~12/06"
+              }, {
+                "type": "message",
+                "label": "斯洛維尼亞2018/1/29~2/07",
+                "text": "斯洛維尼亞2018/1/29~2/07"
+              }]
+            }, {
+              "title": '杜拜',
+              "text": "11/10團-$194,888/位\n12/15團-$194,888/位\n",
+              "actions": [{
+                "type": "message",
+                "label": "杜拜11/10~11/17",
+                "text": "杜拜11/10~11/17"
+              }, {
+                "type": "message",
+                "label": "杜拜12/15~12/22",
+                "text": "杜拜12/15~12/22"
+              }, {
+                "type": "message",
+                "label": "-",
+                "text": " "
+              }]
+            }, {
+              "title": '約旦、以色列',
+              "text": "12/3團-$199,888/位\n\n",
+              "actions": [{
+                "type": "message",
+                "label": "約旦.以色列12/3~12/15",
+                "text": "約旦.以色列12/3~12/15"
+              }, {
+                "type": "message",
+                "label": "-",
+                "text": " "
+              }, {
+                "type": "message",
+                "label": "-",
+                "text": " "
+              }]
+            }]
+          }
+        })
+      }
+      else if (isReserv( msg.trim() )) {
+        let reserv = msg;
+        console.log("reserv = "+reserv);
+        function check_reservation(msg) {
+          if( nowTime%2 ) return true;
+          else return false;
+        }
+        if( !check_reservation(msg) ) {
+          replyMsgObj.message = '此時段已預約滿';
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+          event.reply({
+            type: 'text',
+            text: replyMsgObj.message
+          });
+        }
+        else {
+          for (let i in chatData) {
+            if ( isSameUser(chatData[i].Profile, receiverId, channelId) ){
+              let profile = chatData[i].Profile;
+              console.log(profile);
+              if( profile.Reservation == reserv ) {
+                replyMsgObj.message = '您已預約過此時段';
+                emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+                event.reply({
+                  type: 'text',
+                  text: replyMsgObj.message
+                });
+              }
+              else {
+                newDBRef.child(i).child("Profile").update({
+                  "Reservation": reserv
+                });
+                replyMsgObj.message = '預約成功';
+                emitIO_and_pushDB(replyMsgObj, pictureUrl, channelId, receiverId, 0);
+                event.reply({
+                  type: 'text',
+                  text: replyMsgObj.message
+                });
+              }
+              break;
+            }
+          }
+        }
+      }
+      /*----------------------------------------------------預約分類------------------------------------------------------------*/
+      else if (msg.trim() === '預約DEMO') {
+        replyMsgObj.message = '已接收顯示預約日期';
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+
+        let columns = [];
+        for( let i=0; i<3; i++ ) {
+          let _col = {
+            "title": '預約日期',
+            "text": moment().add(i*3+1,'days').format('MM[/]DD[ ]dddd')+"~"+moment().add(i*3+3,'days').format('MM[/]DD[ ]dddd'),
+            "actions": []
+          };
+          for( let j=1; j<=3; j++ ) {
+            _col.actions.push({
+              "type": "message",
+              "label": moment().add(i*3+j,'days').format('YYYY[/]MM[/]DD[ ]dddd'),
+              "text": "預約DEMO-步驟二 "+moment().add(i*3+j,'days').format('YYYY[/]MM[/]DD'),
+            });
+          }
+          columns.push(_col);
+        }
+
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            type: 'carousel',
+            "columns": columns
+          }
+        });
+      }
+      else if( msg.startsWith('預約DEMO-步驟二' ) ) {
+        date = moment(msg.substr(11), "YYYY[/]MM[/]DD");
+        let diff = date.diff(moment(), 'days')+1; //+1 means include today
+        if( diff>9 ) {
+          replyMsgObj.message = '只能選擇10天以內的日期';
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+          event.reply({
+            type: 'text',
+            text: replyMsgObj.message
+          });
+        }
+        else {
+          let weekday = date.format('d');
+          if( weekday == 6 || weekday == 0 ) {
+            replyMsgObj.message = '假日不得預約，請重新選擇';
+            emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+            event.reply({
+              type: 'text',
+              text: replyMsgObj.message
+            });
+          }
+          else {
+            replyMsgObj.message = '已接收顯示' + date.format('YYYY[/]MM[/]DD[ ]dddd');
+            emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+            event.reply({
+              "type": "template",
+              "altText": "Welcome Template",
+              "template": {
+                "type": 'carousel',
+                "columns": [
+                  {
+                    "title": "面試日期: " + date.format('YYYY[/]MM[/]DD dddd'),
+                    "text": "上午時段\n注意:預約日期，假日一概不受理。",
+                    "actions": [
+                      {
+                        "type": "message",
+                        "label": '10:00-11:00',
+                        "text": "預約DEMO-步驟三 "+date.format('YYYY[/]MM[/]DD dddd')+" 10:00-11:00"
+                      },
+                      {
+                        "type": "message",
+                        "label": '11:00-12:00',
+                        "text": "預約DEMO-步驟三 "+date.format('YYYY[/]MM[/]DD dddd')+" 11:00-12:00"
+                      }
+                    ]
+                  },
+                  {
+                    "title": "面試日期: " + date.format('YYYY[/]MM[/]DD dddd'),
+                    "text": "下午時段\n注意:預約日期，假日一概不受理。",
+                    "actions": [
+                      {
+                        "type": "message",
+                        "label": '15:00-16:00',
+                        "text": "預約DEMO-步驟三 "+date.format('YYYY[/]MM[/]DD dddd')+" 15:00-16:00"
+                      },
+                      {
+                        "type": "message",
+                        "label": '16:00-17:00',
+                        "text": "預約DEMO-步驟三 "+date.format('YYYY[/]MM[/]DD dddd')+" 16:00-17:00"
+                      }
+                    ]
+                  }
+                ]
+              }
+            });
+          }
+        }
+      }
+      else if( msg.startsWith('預約DEMO-步驟三' ) ) {
+        let reserv = msg.substr(11);
+        function check_reservation(msg) {
+          if( nowTime%2 ) return true;
+          else return false;
+        }
+        if( !check_reservation(msg) ) {
+          replyMsgObj.message = '此時段已預約滿';
+          emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+          event.reply({
+            type: 'text',
+            text: replyMsgObj.message
+          });
+        }
+        else {
+          for (let i in chatData) {
+            if ( isSameUser(chatData[i].Profile, receiverId, channelId) ){
+              let profile = chatData[i].Profile;
+              console.log(profile);
+              if( profile.Reservation == reserv ) {
+                replyMsgObj.message = '您已預約過此時段';
+                emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+                event.reply({
+                  type: 'text',
+                  text: replyMsgObj.message
+                });
+              }
+              else {
+                newDBRef.child(i).child("Profile").update({
+                  "Reservation": reserv
+                });
+                replyMsgObj.message = '預約成功';
+                emitIO_and_pushDB(replyMsgObj, pictureUrl, channelId, receiverId, 0);
+                event.reply({
+                  type: 'text',
+                  text: replyMsgObj.message
+                });
+              }
+              break;
+            }
+          }
+        }
+      }
+      else return -1;
+
+      function isReserv(str) {
+        return str=="斯洛維尼亞10/16~10/25" || str== "斯洛維尼亞11/27~12/06" || str== "斯洛維尼亞2018/1/29~2/07"
+        || str== "杜拜11/10~11/17" || str== "杜拜12/15~12/22" || str== "約旦.以色列12/3~12/15";
+      }
+    } // end of appointment
+    function commonquestions(msg){
+      console.log("commonquestions execute");
+      let common_questions = [
+        {
+          "Q": "報名海外或客製化行程",
+          "A": '貼罐頭訊息請上班日專員回覆\n'+
+          '親愛的貴賓您好，請提供您的姓名、聯絡電話、 EMAIL。\n'+
+          '之後將由海外專員-千蔚(分機 31)/客製化專員-雅慈和您聯絡並完成後續報名作業。'
+        },
+        {
+          "Q": "海外v.s全包式",
+          "A": '團體旅遊：參加我們的旅遊團，有台灣的領隊、攝影師、當地華語導遊，三位工作人員全程替貴賓們服務~\n\n'+
+          '全包式旅遊：出發日貴賓自行訂定，4-6人即可成行(2人也可費用較高)，彈性方便，是貴賓專屬的私人團!\n'+
+          '從台灣出發，無領隊及攝影師，當地優質華語導遊及司機帶您走透透~\n\n'+
+          '(未含WIFI分享器)'
+        },
+        {
+          "Q": "覺得價格不平易近人",
+          "A": '選擇一個適當的選項給予回覆\n\n'
+          +'(1)我們都是走比較知性及深度的旅遊，全程無自費及購物。\n'
+          +'對於行程內容及住宿用餐皆精心安排及規劃，各景點都會安排專業的導覽老師來服務，也會有隨團秘書服務每位貴賓，所以費用的部份會比稍微高一些喔！\n'
+          +'旅遊品質也是經過許多參與的貴賓所認證的，也歡迎貴賓您來體驗看看呢吃得好，玩得特別，住的舒適！\n'
+          +'都是董事長精心挑選希望能提供給貴賓們一個特別的旅程~\n\n'
+          +'(2)因為您一直辛苦的工作，是該對自己好一點了！\n'
+          +'參加品質好，吃得好，住得好的行程來犒賞自己。\n'
+          +'我們也有合作的銀行提供六期”零利率”的方案來為您分期繳交費用呢～\n'
+          +'請您再次考慮，對自己好、投資自己、愛自己多一點，這樣也會更有自信後，您的收入自然就會源源不絕地到您的面前了，屆時您就一點都不覺得高價位咯呢！\n\n'
+          +'(3)是的，我們知道團費價格較高，所以我們會拿出相對的行程及服務。\n'
+          +'在各景點我們會請專業的導覽老師，仔細為大家介紹跟解說，讓您不會白白走一遭而一無所獲。\n'
+          +'我們除了讓您吃得好，住的好，更讓您把知識帶回家。\n'
+          +'許多貴賓都是一試成主顧呢～～\n'
+          +'另外我們沒有自費行程或是購物行程，也都不用再給任何小費了．\n'
+          +'請您給我們一次機會，讓曾經是空姐的隨團秘書，以及跟著董事長遊台灣的全體，為您一起留下特別印象深刻的旅遊回憶吧！\n'
+          +'另外我們團費可以分三期或六期零利率喔～\n'
+        },
+        {
+          "Q": '客人要求推薦行程',
+          "A": '可以先詢問目前急需報名的行程，並提供給客人。\n'
+          +'若不喜歡，在提供自己的看法(是可以的)，但通常需要了解公司行程的內容後，才能確實地依照客人的需求介紹行程。\n'
+          +'例如：老人家年紀大～了解需求後再去推薦，不懂行程可以看官網自己去比較看看，絕對不要亂推。 '
+        },
+        {
+          "Q": "長者參加",
+          "A": '推薦較輕鬆一點的行程，例如台南、淡水或彰化等等的慢活優閒的行程。'
+        },
+        {
+          "Q": "單人報名",
+          "A": '太魯閣、苗栗勻淨湖行程不推薦報名\n\n'
+          +'可為客人與同性別旅客配房，或是可以跟秘書or攝影師配房。'
+        },
+        {
+          "Q": "怎麼都只有台北出發",
+          "A": '很多中南部客人常常會提到的問題，我們也是有可以在其他地方可以集合的喔\n'
+          +'可推薦給中南部出發的貴賓介紹的行程唷(其實您在中南部自行前往各集合地點，有時也會更省時也更省錢呢！\n'
+          +'請您就選一個您喜歡的行程，讓我們來為您找尋方法，提供您最適合您的做法來為您服務。\n'
+          +'讓您開心順利出遊，一直是我們所追求的。\n'
+          +'因為您看到您開心的表情，對我們來說都值得了呢)'
+        },
+        {
+          "Q": "遇到沒規劃的行程",
+          "A": '您好，目前我們還在規劃中呢，還是提供給您參考這個行程看看呢~\n'
+          +'(貼貼類似行程網址)並登表到「特殊需求區」。'
+        },
+        {
+          "Q": "客製化時間時應注意",
+          "A": '需要3-4周作業期間，若貴賓賓於line上提出出發日低於此作業期間。\n'
+          +'請引導他他們將出發日往後延至諮詢日一個月左右。'
+        },
+        {
+          "Q": "已滿團或最後機會",
+          "A": '(請來電洽詢)\n'
+          +'基本上剩1.2個名額，先詢詢問貴賓有幾人要報名，詢問專員該團剩幾個名額，若能符合需求先替貴賓報名卡位~'
+        },
+        {
+          "Q": '詢問候補狀況',
+          "A": '目前無法與您確定呢，要待名額釋出才會候補成功唷，還請您耐心等候呢，若候補成功會請專員於第一時間與您聯繫～～'
+        },
+        {
+          "Q": "報名流程款項",
+          "A": '1.《保留名額》無論於官網、現場、電話、LINE上報名，報名狀態皆為《保留名額》。\n\n'
+          +'2.【訂金繳款通知】《保留名額》後 3~5個工作天內會以EMAIL寄出【訂金繳款通知】，內有報名所需所有資訊、文件及費用明細。\n\n'
+          +'3.《報名成功》請於【訂金繳款通知】指定日期內完成訂金之支付，並回傳護照影本，台胞證（僅福州馬祖）、定型化契約、報名表格才算《報名成功》唷~\n\n'
+          +'4.【成團通知】待達成各團設定之最低報名人數便立即以簡訊發出，最慢將於出發日兩周前通知您所報名之團是否成團。\n'
+          +'如未成團便替貴賓執行轉團或退費之作業 ~\n《轉團》已繳付之訂金可轉至我司國內國外任何日期、地點之行程使用。\n'
+          +'《退費》若因此團並未達到最低報名人數，已繳付之訂金可全額退費，匯款之貴賓請提供銀行帳戶退匯，刷卡則進行刷退作業。\n\n'
+          +'5.【尾款繳款通知】我們最慢將於出發日前兩周左右確定是否成團，確定成團後，以 EMAIL寄出【尾款繳款通知】，請於指定日期內完成尾款之支付，並可準備出發囉~'
+        },
+        {
+          "Q": "行程有無成團",
+          "A": '通常周五會將報名資訊PO再LINE群組裡，若時間較後面的團或是無法確定是否成團請回應。\n'
+          +'因時間較後面目前無法與您確認呢，我們正在努力中讓他成團唷~\n'
+          +'請您務必對我們有信心....等。'
+        },
+        {
+          "Q": "匯款訊息",
+          "A": '務必確認匯款帳號末五碼，金額，全名和參團行程（含日期）\n'
+          +'出發前 3-5天會有最準確的行前通知跟當團秘書電話等資料！\n'
+          +'出發前一天會由秘書親自致電給您做聯繫～\n'
+          +'在這之前若您有任何需要我們為您協助的地方。\n'
+          +'請您隨時讓我們為您服務祝您今天也是工作事事順心呢。\n'
+        },
+        {
+          "Q": "基本問題-第二頁",
+          "A": "無更多問題集"
+        },
+        {
+          "Q": "貴賓欲報名",
+          "A": '請貴賓提供以下資料\n'
+          +'貴賓姓名、連絡電話、生日 (西元 19**/**/**)、身分證字號、email、地址、房型（雙人房為一雙人床或兩單人床，參加一日遊無須填寫）、是否有茹素或不吃牛羊等其他?、收據有需要為您開統編抬頭\n'
+          +'(以上訊息務必皆要提供，若您已是參團的貴賓，只需提供全名及生日 )'
+        },
+        {
+          "Q": "報名完成後",
+          "A":'罐頭訊息您的訂單已完成囉～訂單編號：我們會為您保留您的訂位至 ****前，在您支付訂金後，您的報名才算是完成。'
+        },
+        {
+          "Q": "嬰、幼兒童行程費用",
+          "A": '(視各團乘車方式或行程天數而定)\n'
+          +'未滿3歲，則費用為400元不送贈品小孩3～12歲（未滿）費用均減少成人價600元。'
+        },
+        {
+          "Q": "訂金繳交",
+          "A":'(一天1000元/人)\n'
+          +'1日遊繳交訂金新台幣1,000元\n'
+          +'2日遊繳交訂金新台幣2,000元\n'
+          +'3日遊繳交訂金新台幣3,000元\n'
+          +'報名完成後，請於訂單保留時間內之上班時間繳交訂金。'
+        },
+        {
+          "Q": "繳完訂金",
+          "A": '客人跟我們說繳費後，跟客人詢問末五碼及金額。告知當線負責的人(登訊息表)，回覆客人確定款項入帳後會再告知確認收到。'
+        },
+        {
+          "Q": "單人房差費用",
+          "A":'(**暑假及連續假期房間金額有所異動請至前台再確認**)\n'
+          +'淡水兩天一夜$3200\n'
+          +'苗栗兩天一夜$2200\n'
+          +'台中兩天一夜(林酒店)$2600\n'
+          +'花東三天兩夜$4000\n'
+          +'(暑假及連續假期房間金額有所異動請至前台再確認)\n'
+          +'屏北兩天一夜$2640\n'
+          +'馬祖四天三夜$2200\n'
+          +'馬祖五天四夜$3410\n'
+          +'馬祖六天五夜$3900\n'
+          +'馬祖四天三夜(飛機)$3100\n'
+          +'金門三天兩夜澎湖三天兩夜$6300\n'
+          +'(暑假及連續假期房間金額有所異動請至前台再確認)\n'
+          +'武陵兩天一夜$2100\n'
+          +'彰化兩天一夜$1700\n'
+          +'台南兩天一夜(晶英)$2300\n'
+          +'台南兩天一夜(香格里拉)$2500\n'
+          +'溪頭兩天一夜$2900\n阿里山兩天'
+        },
+        {
+          "Q": "基本問題-第一頁",
+          "A": "無問題集"
+        },
+        {
+          "Q": "基本問題-第三頁",
+          "A": "無問題集"
+        },
+        {
+          "Q": " ",
+          "A": ""
+        },
+      ];
+
+      let specific_questions = [
+        {
+          "Q": "何為代收轉付收據",
+          "A": '根據交通部觀光局和財政部國稅局的規定,由於是屬於轉手業務,所以旅行社不適用於發票!\n'
+          +'只能開立蓋有公司統一發票章的代收轉付收據!\n'
+          +'也因為如此,所以旅行社在收受客人的付款之後,必須將錢轉付與航空公司、飯店、餐廳、購買門票等等、而旅行社與航空公司、飯店、餐廳、購買門票之間也沒有發票的往來!\n'
+          +'也只是一張上面蓋有統一發票章的代收轉付收據,因此相對的旅行社開給客人的也只是一張上面蓋有統一發票章的!\n'
+          +'可是不要小看這張代收轉付收據喔!\n'
+          +'它除了不能對獎之外,效用等同統一發票喔!'
+        },
+        {
+          "Q": "國旅卡相關問題",
+          "A":'＊公務人員休假時於旅宿業國民旅遊卡特約商店刷卡消費，則相連假日之刷卡消費得否請領補助？與休假期間之相連假日住宿，是否符合補助規定？\n'
+          +'Ａ：自 106年 3月 1日起，公務人員於與休假期間之相連假日，於旅宿業國民旅遊卡特約商店住宿刷卡消費，除給予核實補助外\n'
+          +'該休假期間及其相連假日之連續期間於各國民旅遊卡特約商店之刷卡消費，得按其行業別核實併入觀光旅遊額度或自行運用額度之補助範圍。\n'
+          +'公務人員週五請休假，且於週六住宿於旅宿業國民旅遊卡特約商店（週六住宿，週日退房），除該筆住宿費用於觀光旅遊額度核實補助外，\n'
+          +'週五至週日之連續期間於各國民旅遊卡特約商店之刷卡消費，均得按其行業別核實併入觀光旅遊額度或自行運用額度之補助範圍。\n\n'
+          +'＊使用國民旅遊卡刷卡消費，其刷卡日與實際消費日（休假期間或與休假期間相連假日之連續期間）不同之預購型交易，應如何核銷？\n'
+          +'Ａ：預購休假期間或與休假期間相連假日之連續期間之交通票券或旅遊套裝行程等預購型交易，其刷卡日期與實際消費日期不同，\n'
+          +'特18約商店將使用網際網路服務為持卡人鍵入收單機構代號、特約商店代號、卡號、消費金額、消費日、授權碼、行程起迄日、旅遊地等資料，\n'
+          +'至「國民旅遊卡檢核系統」中，經檢核系統比對特約商店鍵入之資料如符合於休假期間或與休假期間相連假日之連續期間以國民旅遊卡在特約商店刷卡消費等條件，\n'
+          +'該筆預購型交易，得依休假改進措施規定，按其行業別核實併入觀光旅遊額度或自行運用額度之補助範圍，請於消費時提醒特約商店上開事項，方可正確檢核交易。\n\n'
+          +'＊如預購明年初之觀光旅遊行程，而跨年度適逢機關簽約之發卡機構變更，刷卡付款時，究應使用哪張國民旅遊卡？\n'
+          +'Ａ：如跨年度適逢機關簽約之國民旅遊卡發卡機構變更，則應以各該年度有效之國民旅遊卡刷卡消費。\n'
+          +'是以，如於今年度預購明年之觀光旅遊行程且符合休假補助相關規定，仍應以今年有效之國民旅遊卡刷卡，惟於明年度之強制休假補助費額度內予以補助。\n\n'
+          +'＊購買預購型商品時，是否要請休假刷卡?\n'
+          +'A：購買預購型商品時，毋須請休假刷卡，惟實際消費日須符合休假改進措施之相關規定（休假期間或與休假期間相連假日之連續期間）。'
+        },
+      ];
+
+      let ans = find_answer(msg);
+      function find_answer(str) {
+        for( let i in common_questions ) {
+          if( common_questions[i].Q==str ) return common_questions[i].A;
+        }
+        for( let i in specific_questions ) {
+          if( specific_questions[i].Q==str ) return specific_questions[i].A;
+        }
+        return -1;
+      }
+
+      if (msg.trim() === '基本問題' || msg.trim() === '基本問題-第一頁') {
+        replyMsgObj.message = "已接收顯示基本問題-第一頁";
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        let columns = [];
+        for( let i=0; i<5; i++ ) {
+          let _col = {
+            "title": '基本問題',
+            "text": '請點選欲問之問題',
+            "actions": []
+          }
+          for( let j=0; j<3; j++ ) {
+            _col.actions.push({
+              "type": "message",
+              "label": common_questions[i*3+j].Q,
+              "text": common_questions[i*3+j].Q
+            });
+          }
+          columns.push(_col);
+        }
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            "type": 'carousel',
+            "columns": columns
+          }
+        });
+      }
+      else if (msg.trim() === '基本問題-第二頁') {
+        replyMsgObj.message = "已接收顯示基本問題-第二頁";
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        let columns = [];
+        for( let i=5; i<8; i++ ) {
+          let _col = {
+            "title": '基本問題-第二頁',
+            "text": '請點選欲問之問題',
+            "actions": []
+          }
+          for( let j=0; j<3; j++ ) {
+            _col.actions.push({
+              "type": "message",
+              "label": common_questions[i*3+j].Q,
+              "text": common_questions[i*3+j].Q
+            });
+          }
+          columns.push(_col);
+        }
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            'type': 'carousel',
+            "columns": columns
+          }
+        });
+      }
+      else if (msg.trim() === '特殊問題') {
+        replyMsgObj.message = "已接收顯示特殊問題";
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        let columns = [
+          {
+            "title": '特殊問題',
+            "text": '請點選欲問之問題',
+            "actions": [
+              {
+                "type": "message",
+                "label": '何為代收轉付收據',
+                "text": "何為代收轉付收據"
+              },
+              {
+                "type": "message",
+                "label": ' ',
+                "text": " "
+              },
+              {
+                "type": "message",
+                "label": '國旅卡相關問題',
+                "text": "國旅卡相關問題"
+              }
+            ]
+          }
+        ];
+        event.reply({
+          "type": "template",
+          "altText": "Welcome Template",
+          "template": {
+            'type': 'carousel',
+            "columns": columns
+          }
+        });
+      }
+      else if( ans != -1 ) {
+        replyMsgObj.message = ans;
+        emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+        event.reply({
+          type: 'text',
+          text: replyMsgObj.message
+        });
+      }
+      else return -1;
+    } // end of commonquestions
+    function apiai(obj) {
+      replyMsgObj.name = "Api.ai Reply";
+      var request = apiai_app.textRequest(replyMsgObj.message, {
+        sessionId: '0896c04e-218b-4951-b75d-2d09e1ce7d4b'
+      });
+      request.on('response', function(response) {
+        let action = response.result.action ;
+        let speech = response.result.fulfillment.messages[0].speech ;
+        let parameter = response.result.parameters ;
+        let complete = !response.result.actionIncomplete ;
+        let userSay = response.result.resolvedQuery ;
+
+        if(action != 'input.unknown'){
+          console.log(response.result) ;
+          if(action == 'input.welcome'||action == 'timeGreeting'){
+            replyMsgObj.message = '已接收選項'+"購買方案, "+"服務時段, "+'問卷調查';
+            emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+            event.reply({
+              "type": "template",
+              "altText": "this is a buttons template",
+              "template": {
+                "type": "buttons",
+                "title": "問題選項",
+                "text": "請選擇一個詢問主題",
+                "actions": [{
+                  "type": "postback",
+                  "label": "購買方案",
+                  "data": "purchasePlan"
+                },{
+                  "type": "postback",
+                  "label": "服務時段",
+                  "data": "serviesHour"
+                },{
+                  "type": "postback",
+                  "label": "問卷調查",
+                  "data":"Questionnaire_start"
+                }]
+              }
+            });
+          }
+          else if(action == 'tinistart.faq'){
+            let type = speech ;
+            //let content = '';
+            let incomplete = response.result.actionIncomplete ;
+            console.log(type) ;
+            if(incomplete){
+              replyMsgObj.message = speech;
+              event.reply({ type: 'text', text: speech });
+            }
+            else if(type == 'principal'){
+              replyMsgObj.message = "關於負責人";
+              event.reply({
+                "type": "template",
+                "altText": "關於負責人",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於負責人",
+                  "text": "以下是有關負責人的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "請問什麼樣的人可以擔任負責人?",
+                    "data": "1-1"
+                  }]
+                }
+              });
+            }
+            else if(type == 'money'){
+              replyMsgObj.message = '關於資本額';
+              event.reply({
+                "type": "template",
+                "altText": "關於資本額",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於資本額",
+                  "text": "以下是有關資本額的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "公司的資本額有最低限制嗎",
+                    "data": "2-1",
+                  },{
+                    "type": "postback",
+                    "label": "資本額要在銀行放多久才能用",
+                    "data": "2-2",
+                  },{
+                    "type": "postback",
+                    "label": "資本額一定要經過會計師簽證查核嗎",
+                    "data": "2-3",
+                  },{
+                    "type": "postback",
+                    "label": "我能請人代做資本額嗎",
+                    "data": "2-4",
+                  }]
+                }
+              });
+            }
+            else if(type == 'servies'){
+              replyMsgObj.message = '關於附加服務';
+              event.reply({
+                "type": "template",
+                "altText": "關於附加服務",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於附加服務",
+                  "text": "以下是有關附加服務的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "什麼是商務中心",
+                    "data": "3-1",
+                  },{
+                    "type": "postback",
+                    "label": "商務中心可以提供什麼服務",
+                    "data": "3-2",
+                  },{
+                    "type": "postback",
+                    "label": "App製作是怎麼樣的服務",
+                    "data": "3-3",
+                  },{
+                    "type": "postback",
+                    "label": "什麼樣的人適合使用商務中心",
+                    "data": "3-4",
+                  }]
+                }
+              });
+            }
+            else if(type == 'bank'){
+              replyMsgObj.message = '關於銀行帳戶';
+              event.reply({
+                "type": "template",
+                "altText": "關於銀行帳戶",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於銀行帳戶",
+                  "text": "以下是有關銀行帳戶的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "如何挑選辦理的銀行",
+                    "data": "4-1",
+                  },{
+                    "type": "postback",
+                    "label": "如何將公司籌備處帳戶變成正式帳戶",
+                    "data": "4-2",
+                  },{
+                    "type": "postback",
+                    "label": "我可以在不同銀行開設公司銀行帳戶嗎",
+                    "data": "4-3",
+                  }]
+                }
+              });
+            }
+            else if(type == 'starting'){
+              replyMsgObj.message = '關於公司設立';
+              event.reply({
+                "type": "template",
+                "altText": "關於公司設立",
+                "template": {
+                  "type": "carousel",
+                  "columns": [
+                    {
+                      "text": "以下是有關公司設立的常見問題",
+                      "actions": [
+                        {
+                          "type": "postback",
+                          "label": "印章不見時有什麼要注意的?",
+                          "data": "5-1",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "我可以不設立公司或行號就開始營業嗎?",
+                          "data": "5-2",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "想用的名稱已被使用，但處於解散狀態",
+                          "data": "5-3",
+                        }
+                      ]
+                    },{
+                      "text": "以下是有關公司設立的常見問題",
+                      "actions": [
+                        {
+                          "type": "postback",
+                          "label": "想開小吃店或小店面還需要設立公司嗎",
+                          "data": "5-4",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "請問我需要準備些什麼東西?",
+                          "data": "5-5",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "沒有建物所有權狀的話要怎麼辦?",
+                          "data": "5-6",
+                        }
+                      ]
+                    },{
+                      "text": "以下是有關公司設立的常見問題",
+                      "actions": [
+                        {
+                          "type": "postback",
+                          "label": "如果公司大小章不見的話要怎麼處理?",
+                          "data": "5-7",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "外國人在台灣設立公司時的步驟有什麼不同?",
+                          "data": "5-8",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "公司申請要用的文件和資料要怎樣交給你們?",
+                          "data": "5-9",
+                        }
+                      ]
+                    },{
+                      "text": "以下是有關公司設立的常見問題",
+                      "actions": [
+                        {
+                          "type": "postback",
+                          "label": "我該設立有限公司還是股份有限公司?",
+                          "data": "5-10",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "營業項目要設多少個?有限制嗎?",
+                          "data": "5-11",
+                        },
+                        {
+                          "type": "postback",
+                          "label": " ",
+                          "data": " ",
+                        }
+                      ]
+                    }
+                  ]
+                }
+              });
+            }
+            else if(type == 'business'){
+              replyMsgObj.message = '關於營業項目';
+              event.reply({
+                "type": "template",
+                "altText": "關於營業項目",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於營業項目",
+                  "text": "以下是有關營業項目的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "什麼是特許營業項目",
+                    "data": "6-1",
+                  },{
+                    "type": "postback",
+                    "label": "我能自行增加製造產品的項目嗎",
+                    "data": "6-2",
+                  }]
+                }
+              });
+            }
+            else if(type == 'price'){
+              replyMsgObj.message = '關於價格方案';
+              event.reply({
+                "type": "template",
+                "altText": "關於價格方案",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於價格方案",
+                  "text": "以下是有關價格方案的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "為什麼有特許營業項目時要另外計算費用?",
+                    "data": "7-1",
+                  },{
+                    "type": "postback",
+                    "label": "兩個方案差別在哪?",
+                    "data": "7-2",
+                  }]
+                }
+              });
+            }
+            else if(type == 'insurance'){
+              replyMsgObj.message = '關於勞健保';
+              event.reply({
+                "type": "template",
+                "altText": "關於勞健保",
+                "template": {
+                  "type": "buttons",
+                  "title": "關於勞健保",
+                  "text": "以下是有關勞健保的常見問題",
+                  "actions": [{
+                    "type": "postback",
+                    "label": "我的員工很少，能不投保勞健保嗎?",
+                    "data": "10-1",
+                  },{
+                    "type": "postback",
+                    "label": "我是負責人，我要怎麼投勞保?",
+                    "data": "10-2",
+                  },{
+                    "type": "postback",
+                    "label": "我是負責人，我要怎麼投健保?",
+                    "data": "10-3",
+                  },{
+                    "type": "postback",
+                    "label": "現在加保勞健保會被追繳勞健保嗎?",
+                    "data": "10-4",
+                  }]
+                }
+              });
+            }
+            else if(type == 'other'){
+              replyMsgObj.message = '常見問題';
+              event.reply({
+                "type": "template",
+                "altText": "常見問題",
+                "template": {
+                  "type": "carousel",
+                  "columns": [
+                    {
+                      "text": "以下是其他常見問題",
+                      "actions":[
+                        {
+                          "type": "postback",
+                          "label": "請問貴公司的提供服務的區域有哪些?",
+                          "data": "8-1",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "請問貴公司的服務時間?",
+                          "data": "8-2",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "你們怎麼幫我們進行客服代理的服務?",
+                          "data": "8-3",
+                        }
+                      ]
+                    },{
+                      "text": "以下是其他常見問題",
+                      "actions":[
+                        {
+                          "type": "postback",
+                          "label": "我要怎麼向你們付費並取得正式文件?",
+                          "data": "8-4",
+                        },
+                        {
+                          "type": "postback",
+                          "label": "我可以不用統一發票嗎?",
+                          "data": "9-1",
+                        },
+                        {
+                          "type": "postback",
+                          "label": " ",
+                          "data": " ",
+                        }
+                      ]
+                    }
+                  ]
+                }
+              });
+            }
+            else console.log("api.ai type error");
+            emitIO_and_pushDB(replyMsgObj, null, channelId, receiverId, 0);
+            return ;
+          }
+          // else if(action == 'ticket' ){
+          //   ticket.email = parameter.email ;
+          //   ticket.phone = parameter.phone ;
+          //   ticket.goods = parameter.goods ;
+          //   ticket.name = receiver_name ;
+          //   ticket.lineId = receiverId;
+          // }
+          // else if(action == 'ticket.description'){
+          //   ticket.description = userSay ;
+          //   ticket.priority = parameter.priority ;
+          //   if(complete) createTicket(ticket);
+          // }
+        }
+        else{console.log(action);}
+
+      });
+      request.on('error', function(error) {
+        console.log(error);
+      });
+      request.end();
+
+    } // end of apiai
+
+    // functions
+  });
+} // end of bot_on_message
+
+function bot_on_postback(event){
+  console.log("postback starts");
+  let channelId = this.options.channelId;
+  let data = event.postback.data ;
+  let receiverId = event.source.userId;
+  let receiver_name;
+  let nowTime = Date.now();
+  console.log(event);
+
+  event.source.profile().then(function(profile){
+    receiver_name = profile.displayName;
+    if( receiver_name==undefined ) receiver_name = "userName_undefined";
+
+    var msgObj = {
+      owner: "agent",
+      name: 'api.ai',
+      time: nowTime,
+      message: "undefined_message"
+    };
+
+    if(data.indexOf('purchasePlan') != -1){
+      let hr = data.substring(13);
+      console.log("hour:"+hr) ;
+      switch (hr) {
+        case '4':
+        msgObj.message = "4小時方案   15,888 元  \n 4小時方案/每天   $15,888每月" ;
+        break;
+        case '8':
+        msgObj.message = "8小時方案   21,888 元  \n 8小時方案/每天   $21,888每月" ;
+        break;
+        case '16':
+        msgObj.message = "16小時方案   39,888 元  \n 16小時方案/每天   $39,888每月" ;
+        break;
+        default:
+        msgObj.message = '已發送購買方案'+"4小時方案  "+"8小時方案  "+"16小時方案  ";
+        event.reply({
+          "type": "template",
+          "altText": "購買方案說明",    //text that customer see at chat list
+          "template": {
+            "type": "buttons",
+            "title": "購買方案說明",
+            "text": "請選擇一個方案",
+            "actions": [{
+              "type": "postback",
+              "label": "4小時方案",
+              "data": "purchasePlan-4"
+            },{
+              "type": "postback",
+              "label": "8小時方案",
+              "data": "purchasePlan-8"
+            },{
+              "type": "postback",
+              "label": "16小時方案",
+              "data": "purchasePlan-16"
+            }]
+          }
+        });
+        break;
+      }
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      event.reply({"type":"text","text":msgObj.message}) ;
+    }
+    else if(data == 'serviesHour'){
+      msgObj.message =
+      "我們的服務時如下:\n"+
+      "「0700~1100」\n "+
+      "「1100~1500」\n "+
+      "「1500~1900」\n "+
+      "「1900~2300」\n "+
+      " 兩個時段必須是「連續的」\n"+
+      "「0700~1100」及「1100~1500」\n"+
+      "「1100~1500」及「1500~1900」\n"+
+      "「1500~1900」及「1900~2300」。" ;
+
+      console.log(msgObj.message) ;
+      emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      event.reply({"type":"text","text":msgObj.message}) ;
+    }
+    else if(data.indexOf('Questionnaire') != -1){
+      let pos = data.indexOf(':');
+      let para = data.substring(14,pos);
+      let value = data.substring(pos+1);
+      let id = event.source.userId ;
+      //console.log(pos+" "+id+":"+para+":"+value) ;
+      //console.log(event.message) ;
+      if(pos != -1){
+        let obj = {} ;
+        obj.id = id ;
+        obj.para = para ;
+        obj.value = value ;
+        updateProfile(obj) ;
+      }
+
+      if(para == '性別'){
+        msgObj.message = '詢問客戶資料(居住地)';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+        event.reply({
+          "type": "template",
+          "altText": "問券調查",
+          "template": {
+            "type": "buttons",
+            "title": "問券調查:地區",
+            "text": "請選擇您的性別",
+            "actions": [{
+              "type": "postback",
+              "label": "地區:北部",
+              "text": "地區:北部",
+              "data": "Questionnaire_地區:北部"
+            },{
+              "type": "postback",
+              "label": "地區:中部",
+              "text": "地區:中部",
+              "data": "Questionnaire_地區:中部"
+            },{
+              "type": "postback",
+              "label": "地區:南部",
+              "text": "地區:南部",
+              "data": "Questionnaire_地區:南部"
+            },{
+              "type": "postback",
+              "label": "地區:東部",
+              "text": "地區:東部",
+              "data": "Questionnaire_地區:東部"
+            }]
+          }
+        });
+      }
+      else if(para == '地區'){
+        msgObj.message = '詢問客戶資料(年齡層)';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+        event.reply({
+          "type": "template",
+          "altText": "問券調查part2",
+          "template": {
+            "type": "carousel",
+            "columns": [
+              {
+                "text": "您的年齡層。請左右滑動並選擇您的年齡層",
+                "actions": [
+                  {
+                    "type": "postback",
+                    "label": "年齡:20以下",
+                    "text": "年齡:20以下",
+                    "data": "Questionnaire_年齡:20以下"
+                  },
+                  {
+                    "type": "postback",
+                    "label": "年齡:21-30",
+                    "text": "年齡:21-30",
+                    "data": "Questionnaire_年齡:21-30"
+                  },
+                  {
+                    "type": "postback",
+                    "label": "年齡:31-40",
+                    "text": "年齡:31-40",
+                    "data": "Questionnaire_年齡:31-40"
+                  }
+                ]
+              },
+              {
+                "text": "您的年齡層。請左右滑動並選擇您的年齡層",
+                "actions": [
+                  {
+                    "type": "postback",
+                    "label": "年齡:41-50",
+                    "text": "年齡:41-50",
+                    "data": "Questionnaire_年齡:41-50"
+                  },
+                  {
+                    "type": "postback",
+                    "label": "年齡:51-64",
+                    "text": "年齡:51-64",
+                    "data": "Questionnaire_年齡:51-64"
+                  },
+                  {
+                    "type": "postback",
+                    "label": "年齡:65以上",
+                    "text": "年齡:65以上",
+                    "data": "Questionnaire_年齡:65以上"
+                  }
+                ]
+              }
+            ]
+          }
+        });
+      }
+      else if(para == '年齡'){
+        msgObj.message = '感謝您填寫問卷!' ;
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+        //bot.push(obj.id,msgObj.message);
+        event.reply({ type: 'text', text: msgObj.message });
+      }
+      else{
+        event.reply({
+          "type": "template",
+          "altText": "問券調查part1",
+          "template": {
+            "type": "buttons",
+            "title": "問券調查:性別",
+            "text": "請選擇您的性別",
+            "actions": [{
+              "type": "postback",
+              "label": "性別:男",
+              "text": "性別:男",
+              "data": "Questionnaire_性別:男"
+            },{
+              "type": "postback",
+              "label": "性別:女",
+              "text": "性別:女",
+              "data": "Questionnaire_性別:女"
+            }]
+          }
+        });
+        msgObj.message = '詢問客戶資料(性別)';
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+      }
+    }
+    else{
+      tinistartAns(event);
+    }
+
+    function tinistartAns(event) {
+      var gsjson = require('google-spreadsheet-to-json');
+      gsjson({
+        spreadsheetId: '1ZhR-f6BVHp4kIzBQL_VK9BDP4AS0KDTESYqq22RrtOA',
+        hash : 'id'
+        // other options...
+      })
+      .then(function(result) {
+        let ansId = event.postback.data;
+        console.log(ansId);
+        //console.log(result.length);
+        //console.log(result);
+        let ans = result[ansId].ans ;
+        let que = result[ansId].question ;
+        var msg = 'Q :\n'+que+'\n'+'A :\n'+ans ;
+        msgObj.owner = "agent";
+        msgObj.name ='apiai';
+        msgObj.time = nowTime;
+        msgObj.id = receiverId;
+        msgObj.message = msg ;
+        emitIO_and_pushDB(msgObj, pictureUrl, channelId, receiverId, 1);
+        event.reply({ type: 'text', text: msg });
+      })
+      .catch(function(err) {
+        console.log(err.message);
+        console.log(err.stack);
+      });
+
+    }
+    function updateProfile(survey) {
+      console.log(survey);
+      for( let i in chatData ) {
+        if( isSameUser(chatData[i].Profile, survey.id, channelId) ) {
+          console.log('match!updating profile...')
+          let obj = {};
+          obj['/'+survey.para] = survey.value;
+          newDBRef.child(i).child("Profile").update(obj);
+          break;
+        }
+      }
+    }
+
+  });
+} // end of bot_on_postback
+function bot_on_follow(event){
+  let follow_message = [];
+  if(addFriendBroadcastMsg === []){
+    follow_message.push('感謝您將本帳號設為好友！');
+  }else{
+    follow_message = [];
+    follow_message = addFriendBroadcastMsg;
+  }
+  event.reply(follow_message);
+} // end of bot_on_follow
+// 群組webhook
+app.post('/linehook1', function() {
+  linebotParser[0](arguments[0], arguments[1], arguments[2]);
+});
+app.post('/linehook2', function() {
+  linebotParser[1](arguments[0], arguments[1], arguments[2]);
+});
+/**
+* Socket.io 傳訊息
+*/
+io.sockets.on('connection', (socket) => {
+  // 內部聊天室
+  socket.on('get internal chat from back', (data) => {
+    let thisAgentData = [];
+    for( let i in agentChatData ){
+      if( agentChatData[i].Profile.agent.indexOf(data.id) != -1 ) {
+        thisAgentData.push( agentChatData[i] );
+      }
+    }
+    admin.database().ref('users/').once('value', snap => {
+      let agentData = snap.val();
+      let agentIdToName = { "0": "System" };
+      for( let prop in agentData ) {
+        agentIdToName[prop] = agentData[prop].nickname;
+      }
+      let internalTagsData = [
+        { "name": "roomName", "type": "text", "set": "single", "modify": true },
+        { "name": "description", "type": "text", "set": "multi", "modify": true },
+        { "name": "owner", "type": "single-select", "set": [], "modify": true },
+        { "name": "agent", "type": "multi-select", "set": [], "modify": true },
+        { "name": "recentChat", "type": "time", "set": "", "modify": false },
+        { "name": "firstChat", "type": "time", "set": "", "modify": false }
+      ]
+      socket.emit('push internal chat to front', {
+        data: thisAgentData,
+        agentIdToName: agentIdToName,
+        internalTagsData: internalTagsData
+      });
+    });
+  });
+  socket.on('send internal message', (data) => {
+    console.log('send internal message');
+    console.log(data);
+    let roomId = data.roomId;
+    console.log(socket.nickname);
+    emitIO_and_pushDB_internal(data.sendObj, roomId, socket.nickname);
+  });
+  socket.on('update internal profile', (data) => {
+    console.log("update profile! data=");
+    console.log(data);
+    for( let i in agentChatData ) {
+      if( agentChatData[i].Profile.roomId == data.roomId ) {
+        let updateObj = {};
+        for( let prop in data ) {
+          updateObj[prop] = data[prop];
+        }
+        console.log(updateObj);
+        console.log("update profile complete!");
+        agentDBRef.child(i).child("Profile").update(updateObj);
+        break;
+      }
+    }
+  });
+
+  //更新關鍵字回覆
+  socket.on('update add friend message', data => {
+    addFriendBroadcastMsg = data;
+    console.log(addFriendBroadcastMsg);
+  });
+  socket.on('update overview', (data) => {
+    overview[data.message] = data.time;
+  });
+  // 更新群組
+  socket.on('update bot', (data) => {
+    update_line_bot(data);
+  });
+
+  socket.on('request line channel', (userId)=> {
+    console.log("userId = "+userId);
+    admin.database().ref('users/' + userId).once('value', snap => {
+      let chatInfo = snap.val();
+      if(chatInfo){
+        let chanId_1 = chatInfo.chanId_1;
+        let chanId_2 = chatInfo.chanId_2;
+        let fbPageId = chatInfo.fbPageId;
+        socket.emit('response line channel', {
+          chanId_1: chanId_1,
+          chanId_2: chanId_2,
+          fbPageId: fbPageId
+        });
+      }
+      else {
+        console.log('chatInfo is null');
+        socket.emit('response line channel', {
+          chanId_1: '',
+          chanId_2: '',
+          fbPageId: ''
+        });
+      }
+    });
+  });
+
+  function update_line_bot( chanInfo ) {
+    console.log("update_line_bot");
+    console.log("chanInfo: ");
+    console.log(chanInfo);
+
+    if( chanInfo.hasOwnProperty("line_1") ) {
+      console.log("update Line channel_1 information.");
+      bot[0] = linebot(chanInfo.line_1);
+      linebotParser[0] = bot[0].parser();
+      bot[0].on('message', bot_on_message);
+      bot[0].on('postback', bot_on_postback);
+      bot[0].on('follow', bot_on_follow);
+      channelIds[0] = chanInfo.line_1.channelId;
+    }
+
+    if( chanInfo.hasOwnProperty("line_2") ) {
+      console.log("update Line channel_2 information.");
+      bot[1] = linebot(chanInfo.line_2);
+      linebotParser[1] = bot[1].parser();
+      bot[1].on('message', bot_on_message);
+      bot[1].on('postback', bot_on_postback);
+      bot[1].on('follow', bot_on_follow);
+      channelIds[1] = chanInfo.line_2.channelId;
+    }
+    if( chanInfo.hasOwnProperty("fb") ) {
+      console.log("update fb channel information.");
+      let fb = chanInfo.fb;
+      if( [fb.pageID, fb.appID, fb.appSecret, fb.validationToken, fb.pageToken].every( (ele) => {
+        return ele;
+      }) ) {
+        fb_bot = MessengerPlatform.create(chanInfo.fb);
+      }
+      // fb_bot.webhook('/webhook'); //不知道這句要不要
+      channelIds[2] = chanInfo.fb.pageId;
+    }
+
+    console.log('update line and fb config done');
+  }
+
+  // 新使用者
+  socket.on('new user', (data, callback) => {
+    if (data in users) {
+      callback(false);
+    }
+    else {
+      callback(true);
+      socket.nickname = data;
+      users[socket.nickname] = socket;
+    }
+  });
+
+  socket.on('get tags from chat', data => {
+    socket.emit('push tags to chat', tagsData);
+  });
+
+  // going to tags page
+  socket.on('get tags from tags', data => {
+    socket.emit('push tags to tags', tagsData);
+  });
+  socket.on('update tags', data => {
+    let updateObj = {};
+    updateObj['/Data'] = data;
+    tagsRef.update(updateObj);
+  });
+
+  socket.on('get json from back', (data, callback) => {
+    let sendData = [];
+    for( let i in chatData ) {
+      let profile = chatData[i].Profile;
+      let _lastMsg = chatData[i].Messages[ chatData[i].Messages.length-1 ];
+      if( profile.recentChat != _lastMsg.time ) {
+        profile.recentChat = _lastMsg.time;
+        let timeArr = chatData[i].Messages.map( function(ele) {
+          return ele.time;
+        });
+        let times = [];
+        let j=0;
+        const GAP = 1000*60*15; //15 min
+        let headTime;
+        let tailTime;
+        while( j<timeArr.length ) {
+          headTime = tailTime = timeArr[j];
+          while( timeArr[j]-tailTime < GAP ) {
+            tailTime = timeArr[j];
+            j++;
+            if( j==timeArr.length ) break;
+          }
+          let num = tailTime-headTime;
+          if( num<1000 ) num = 1000;
+          times.push(num);
+        }
+        let sum = 0;
+        for( let j in times ) sum += times[j];
+        sum /= 60000;
+        profile.totalChat = sum;
+        profile.avgChat = sum/times.length;
+        profile.chatTimeCount = times.length;
+        if( isNaN(profile.avgChat) || profile.avgChat<1 ) profile.avgChat = 1;
+        if( isNaN(profile.totalChat) || profile.totalChat<1 ) profile.totalChat  = 1;
+
+        let updateObj = {};
+        newDBRef.child(i).child("Profile").update({
+          "avgChat": profile.avgChat,
+          "totalChat": profile.totalChat,
+          "chatTimeCount": profile.chatTimeCount,
+          "recentChat": profile.recentChat,
+          "平均每次聊天時間": profile.avgChat,
+          "總共聊天時間": profile.totalChat,
+          "聊天次數": profile.chatTimeCount,
+          "上次聊天時間": profile.recentChat
+        });
+      }
+
+
+      let msgs = chatData[i].Messages;
+      let position = 0;
+      if( msgs.length>20 ) {
+        position = msgs.length-20;
+        msgs = msgs.slice(position);
+      }
+      sendData.push({
+        Messages: msgs,
+        position: position,
+        Profile: profile
+      });
+
+    }
+    socket.emit('push json to front', sendData);
+    console.log('push json to front');
+  });
+
+  socket.on('upload history msg from front', data => {
+
+    let userId = data.userId;
+    let roomId = data.roomId;
+    let head = data.head;
+    let tail = data.tail;
+    let sendData = [];
+    for( let i in chatData ) {
+      if( isSameUser(chatData[i].Profile, userId, roomId) ) {
+        for( let j=head; j<tail+1; j++ ) {
+          sendData.push( chatData[i].Messages[j] );
+        }
+        break;
+      }
+    }
+    socket.emit('upload history msg from back', {
+      userId: userId,
+      roomId: roomId,
+      messages: sendData
+    });
+  });
+
+  socket.on('read message', (data) => {
+    console.log("agent read message of user "+data.userId);
+    for( let i in chatData ) {
+      if( isSameUser(chatData[i].Profile, data.userId, data.channelId) ) {
+        newDBRef.child(i).child("Profile").update({
+          "unRead": 0,
+        });
+        break;
+      }
+    }
+  });
+
+  // 從SHIELD chat傳送訊息
+  socket.on('send message', (data, callback) => {
+    console.log('data of send message',data);
+    let msg = data.msg;
+    let agent_sendTo_receiver = data.id === undefined ? "agent_sendTo_receiver undefined!" : data.id
+    let chanId = data.channelId;
+    if(socket.nickname !== undefined){
+      agent_nickname = socket.nickname;
+    }
+    else {
+      agent_nickname = 'agent';
+    }
+    var message;
+    let nowTime = Date.now();
+
+    //====send to fb or line====//
+    if(chanId === 'FB_room'){
+      send_to_FB(msg, agent_sendTo_receiver);
+    }
+    else {
+      send_to_Line(msg, agent_sendTo_receiver, chanId);
+    }
+
+    // 傳到shield chat
+    var msgObj = {
+      owner: "agent",
+      name: agent_nickname,
+      time: nowTime,
+      message: "undefined_message"
+    };
+
+    if(chanId === 'FB_room'){
+      //------FACEBOOK-------
+      if (msg.startsWith('/image')){
+        // msgObj.message = data.msg+'"/>';
+      }
+      else if (msg.startsWith('/video')){
+        // msgObj.message = data.msg+ '" type="video/mp4"></video>';
+      }
+      else if (msg.startsWith('/audio')){
+        // msgObj.message = data.msg+ '" type="audio/mpeg"></audio>';
+      }
+      else {
+        msgObj.message = data.msg;
+      }
+      emitIO_and_pushDB(msgObj, null, 'FB', agent_sendTo_receiver, 0);
+    }
+    else {
+      // -----LINE-----
+      let channelId = -1;
+      if( channelIds.indexOf(chanId) !== -1 ) channelId = chanId;
+      else console.log("chanId not found error 8787");
+
+      if (msg.includes('/image')) {
+        msgObj.message = '傳圖檔給客戶';
+      }
+      else if (msg.includes('/audio')) {
+        msgObj.message = '傳音檔給客戶';
+      }
+      else if (msg.includes('/video')) {
+        msgObj.message = '傳影檔給客戶';
+      }
+      else if ( isUrl(msg) ) {
+        let urlStr = '<a href=';
+        if (msg.indexOf('https') !== -1 || msg.indexOf('http') !== -1) {
+          urlStr += '"http://';
+        }
+        msgObj.message = urlStr + msg + '/" target="_blank">' + msg + '</a>';
+      }
+      else if (msg.includes('/sticker')) {
+        msgObj.message = 'Send sticker to user';
+      }
+      else {
+        msgObj.message = msg;
+      }
+      emitIO_and_pushDB(msgObj, null, channelId, agent_sendTo_receiver, 0);
+    }
+  }); //sent message
+  socket.on('get profile', (data, callback) => {
+    console.log("get profile");
+    console.log(data.channelId+", "+data.id);
+    for( let i in chatData ) {
+      if( isSameUser(chatData[i].Profile, data.id, data.channelId) ) {
+        console.log("match!");
+        socket.emit('show profile',chatData[i].Profile);
+      }
+    }
+  });
+
+  socket.on('update profile', (data, callback) => {
+    console.log("update profile");
+    for( let i in chatData ) {
+      if( isSameUser(chatData[i].Profile, data.userId, data.channelId) ) {
+        let updateObj = {};
+        for( let prop in data ) {
+          updateObj[prop] = data[prop];
+        }
+        console.log(updateObj);
+        console.log("update profile complete!");
+        newDBRef.child(i).child("Profile").update(updateObj);
+        break;
+      }
+    }
+  });
+  socket.on('reminder of calendar', (info) => {
+    //console.log(info.nowtime+' function in!');
+    //console.log('Server is checking the reminder...');
+    //console.log(info.nowtime);
+    admin.database().ref('cal-events/' + info.userId).once('value', snap => {
+      let data = snap.val();
+      for (let i in data) {
+        //console.log(data[i].remind);
+        if ((data[i].start == info.nowtime) && (data[i].remind == false)) { //判斷事件是否到期且避免重複提醒
+          admin.database().ref('cal-events/' + info.userId + '/' + i).update({
+            remind: true //true代表已提醒過
+          });
+          socket.emit('pop up reminder', data[i].title); //呼叫前端pop up提醒視窗
+          console.log('calendar event ' + data[i].start + ' started');
+
+          var mailOptions = { //信件內容
+            from: '9thflr.wuyuan@gmail.com',
+            to: info.email,
+            subject: 'Your event "' + data[i].title + '" has started.',
+            text: 'Your event "' + data[i].title + '" has started at ' + data[i].start
+          };
+          //自動寄信function
+          transporter.sendMail(mailOptions, function(error, info) {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          });
+
+          var avoidremindagain = setTimeout(function() { //事件提醒後60秒內不再提醒
+            //console.log('Waiting for 60 seconds to set remind false');
+            admin.database().ref('cal-events/' + info.userId + '/' + i).update({
+              remind: false
+            });
+            clearTimeout(avoidremindagain);
+          }, 60000);
+        } //end of if
+      } //end of for
+    }); //end of database.ref
+  }); //end of reminder of calendar
+
+
+  // // This is for Agent Chat
+  // socket.on('get json from agentChat', (data) => {
+  //   let thisAgentData = [];
+  //   for( let i in agentChatData ){
+  //     if( agentChatData[i].Profile.agent.indexOf(data.id) != -1 ) thisAgentData.push( agentChatData[i] );
+  //   }
+  //
+  //   let sendData = [];
+  //   for( let i in thisAgentData ) {
+  //     let msgs = thisAgentData[i].Messages;
+  //     if( !msgs ) msgs = [];
+  //     let position = 0;
+  //     if( msgs.length>20 ) {
+  //       position = msgs.length-20;
+  //       msgs = msgs.slice(position);
+  //     }
+  //     sendData.push({
+  //       Messages: msgs,
+  //       position: position,
+  //       Profile: thisAgentData[i].Profile
+  //     });
+  //   }
+  //   socket.emit('push json to agentChat', sendData);
+  // });
+
+  // socket.on('upload history msg from front agentChat', data => {
+  //   console.log('upload history msg of roomId = '+data.roomId+', head = '+data.head+', tail = '+data.tail);
+  //   let roomId = data.roomId;
+  //   let head = data.head;
+  //   let tail = data.tail;
+  //   let sendData = [];
+  //
+  //   for( let i in agentChatData ) {
+  //     if( agentChatData[i].Profile.roomId === roomId ) {
+  //       for( let j=head; j<tail+1; j++ ) {
+  //         console.log("j = "+j);
+  //         sendData.push( agentChatData[i].Messages[j] );
+  //       }
+  //       break;
+  //     }
+  //   }
+  //   console.log("sendData = ");
+  //   console.log(sendData);
+  //   socket.emit('upload history msg from back agentChat', {
+  //     roomId: roomId,
+  //     messages: sendData
+  //   });
+  //
+  // });
+
+  // socket.on('read message agentChat', data => {
+  //   for( let prop in agentChatData ) {
+  //     if( agentChatData[prop].Profile.roomId === data.roomId ) {
+  //       let unRead = agentChatData[prop].Profile.unRead;
+  //       if( unRead ) {
+  //         let pos = unRead.indexOf(data.reader);
+  //         if( pos!=-1 ) unRead.splice(pos,1);
+  //       }
+  //       else unRead = [];
+  //       agentDBRef.child(prop).child("Profile/unRead").set(unRead);
+  //     }
+  //   };
+  // });
+
+  // socket.on('send message agentChat', (data, callback) => {
+  //   let msg = data.msg.trim();
+  //   let receive_room = data.roomId.trim();
+  //   let nowTime = Date.now();
+  //
+  //   console.log(receive_room);
+  //   if(socket.nickname !== undefined){
+  //     agent_nickname = socket.nickname;
+  //   }
+  // else {
+  //     agent_nickname = 'agent';
+  //   }
+  //
+  //   var msgObj = {
+  //     name: data.sender,
+  //     time: nowTime,
+  //   };
+  //   function emitIO_and_pushDB(obj) {
+  //     console.log("sending object agent2: ");
+  //     console.log(obj);
+  //
+  //     console.log("sending to new firebase database");
+  //     sendToNewFb(obj);
+  //     console.log("sending to new io sockets...");
+  //     sendToFrontSocket(obj);
+  //     console.log("All sent!");
+  //   }
+  //
+  //   function sendToNewFb(obj){
+  //     for( let prop in agentChatData ) {
+  //       console.log("find next room data");
+  //       if(agentChatData[prop].Profile.roomId == receive_room) {
+  //         console.log("find the same room");
+  //         let length = agentChatData[prop].Messages.length - 1;
+  //         let updateObj = {};
+  //         updateObj['/'+prop+'/Messages/'+length] = obj;
+  //
+  //         let unRead = agentChatData[prop].Profile.agent;
+  //         unRead.splice( unRead.indexOf( data.sender ), 1 );
+  //         updateObj['/'+prop+'/Profile/unRead'] = unRead;
+  //
+  //         agentDBRef.update(updateObj);
+  //         flag = false;
+  //         break;
+  //       }
+  //     }
+  //   }
+  //
+  //   function sendToFrontSocket(obj) {
+  //     obj.roomId = receive_room;
+  //     io.sockets.emit('new message agentChat', obj);
+  //   }
+  //
+  //   //------FACEBOOK-------
+  //   if (msg.startsWith('<img')){
+  //       msgObj.message = data.msg+'"/>';
+  //       emitIO_and_pushDB(msgObj);
+  //   }
+  //   else if (msg.startsWith('<video')){
+  //       msgObj.message = data.msg+ '" type="video/mp4"></video>';
+  //       emitIO_and_pushDB(msgObj);
+  //   }
+  //   else if (msg.startsWith('<audio')){
+  //       msgObj.message = data.msg+ '" type="audio/mpeg"></audio>';
+  //       emitIO_and_pushDB(msgObj);
+  //   }
+  //
+  //   //--------LINE--------
+  //
+  //    else if (isUrl(msg)) {
+  //     let urlStr = '<a href=';
+  //     if (msg.indexOf('https') !== -1 || msg.indexOf('http') !== -1) {
+  //       urlStr += '"https://';
+  //     }
+  //     msgObj.message = urlStr + msg + '/" target="_blank">' + msg + '</a>';
+  //     emitIO_and_pushDB(msgObj);
+  //
+  //   }
+  // else if (msg.includes('/sticker')) {
+  //     stickerId = msg.substr( msg.indexOf(' ')+1 );
+  //     msgObj.message = '<img src="https://sdl-stickershop.line.naver.jp/stickershop/v1/sticker/'
+  //    +stickerId+'/android/sticker.png"' +
+  //     emitIO_and_pushDB(msgObj);
+  //   }
+  // else {
+  //     msgObj.message = msg;
+  //     emitIO_and_pushDB(msgObj);
+  //   }
+  // });//sent message
+  // socket.on('update profile agentChat', (data, callback) => {
+  //   console.log("update profile");
+  //   for( let i in agentChatData ) {
+  //     if( agentChatData[i].Profile.roomId == data.roomId ) {
+  //       agentDBRef.child(i).child("Profile").update(data);
+  //       return;
+  //     }
+  //   }
+  //   console.log("new room come in!");
+  //
+  //   let nowTime = Date.now();
+  //   data.firstChat = nowTime;
+  //   data.recentChat = nowTime;
+  //   data.unRead = JSON.parse(JSON.stringify(data.agent));
+  //   data.unRead.splice(data.unRead.indexOf(data.owner),1);
+  //   console.log("data: ");
+  //   console.log(data);
+  //
+  //   agentDBRef.push({
+  //     Messages: [{
+  //       message: "group establish",
+  //       name: "System",
+  //       time: nowTime
+  //     }],
+  //     Profile: data
+  //   });
+  // });
+
+  socket.on('disconnect', (data) => {
+    if (!socket.nickname) return;
+    delete users[socket.nickname];
+  });
+});
+
+function send_to_FB(msg, receiver) {
+  if (msg.startsWith('/image')) {
+    let link = msg.substr(7);
+    console.log('this is image');
+    console.log(link);
+
+    fb_bot.sendImageMessage(receiver, link, true);
+  }
+  else if (msg.startsWith('/video')) {
+    let link = msg.substr(7);
+    console.log('this is video');
+    console.log(link);
+    fb_bot.sendVideoMessage(receiver, link, true);
+  }
+  else if (msg.startsWith('/audio')) {
+    let link = msg.substr(7);
+    console.log('this is audio');
+    console.log(link);
+    fb_bot.sendAudioMessage(receiver, link, true);
+  }
+  else {
+    fb_bot.sendTextMessage(receiver, msg);
+  }
+}
+
+function send_to_Line(msg, receiver, chanId) {
+  let message = {};
+  if(msg.includes('/image')){
+    console.log('got image');
+    let link = msg.substr(7);
+    message = {
+      type: "image",
+      originalContentUrl: link,
+      previewImageUrl: link
+    };
+  }
+  else if(msg.includes('/audio')){
+    console.log('got audio');
+    let link = msg.substr(7);
+    message = {
+      type: "audio",
+      originalContentUrl: link,
+      duration: 240000
+    };
+    console.log(message);
+  }
+  else if(msg.includes('/video')){
+    console.log('got video');
+    let link = msg.substr(7);
+    message = {
+      type: "video",
+      originalContentUrl: link,
+      previewImageUrl: "https://tinichats.com/assets/images/tab.png"
+    };
+    console.log(message);
+  }
+  else if (msg.includes('/sticker')) {
+    message = {
+      type: "sticker",
+      packageId: parseInt(msg.substr(msg.indexOf(' '))),
+      stickerId: parseInt(msg.substr(msg.lastIndexOf(' ')))
+    };
+  }
+  else {
+    message = {
+      type: "text",
+      text: msg
+    };
+  }
+
+  if(chanId === channelIds[0]){
+    console.log('send to room 1, message: ');
+    console.log(message);
+    bot[0].push(receiver, message);
+  }
+  else if(chanId === channelIds[1]) {
+    console.log('send to room 2, message: ');
+    console.log(message);
+    bot[1].push(receiver, message);
+  }
+}
+
+// FUNCTION //
+
+function emitIO_and_pushDB(obj, pictureUrl, channelId, receiverId, unRead) {
+  console.log("(channelId, receiverId) = (" + channelId + ", " + receiverId + ")");
+  console.log("sending to firebase database...");
+  send_to_firebase(obj, pictureUrl, channelId, receiverId, unRead);
+}
+
+function send_to_firebase(obj, pictureUrl, channelId, receiverId, unRead){
+  let flag = true;
+  let count_unread = unRead;    //0 or 1
+  for( let prop in chatData ) {
+    let data = chatData[prop];
+    if( isSameUser(data.Profile, receiverId, channelId) ) {
+      console.log("find user in database, prop = "+prop);
+      let length = data.Messages.length;    //訊息總長度
+      count_unread += data.Profile.unRead;    //新的UNREAD加上舊的UNREAD數目
+      let updateObj = {};       //建立update物件
+      updateObj['/'+prop+'/Messages/'+length] = obj;  //將最新一則的訊息放至訊息陣列的最後
+      if( unRead>0 ) updateObj['/'+prop+'/Profile/unRead'] = count_unread;    //如果新訊息是user發的，則須更新unread
+      if( pictureUrl ) updateObj['/'+prop+'/Profile/pictureUrl'] = pictureUrl;    //如果有獲得user的頭貼，則更新頭貼
+      else pictureUrl = data.Profile.pictureUrl;      //如果無獲得user的頭貼，則將原本頭貼傳回全端
+      newDBRef.update(updateObj);
+      flag = false;
+      break;
+    }
+  }
+  if( flag ) {
+    console.log("new user come in");
+    let newData = {
+      Profile: {
+        nickname: obj.name,
+        userId: receiverId,
+        channelId: channelId,
+        age: -1,
+        telephone: "",
+        address: "",
+        firstChat: Date.now(),
+        首次聊天時間: Date.now(),
+        recentChat: Date.now(),
+        上次聊天時間: Date.now(),
+        totalChat: 1,
+        總共聊天時間: 1,
+        avgChat: 1,
+        平均每次聊天時間: 1,
+        聊天次數: 1,
+        unRead: 1,
+        photo: pictureUrl? pictureUrl :""
+      },
+      Messages: [obj]
+    };
+    newDBRef.push(newData);
+    io.sockets.emit('new user profile', newData.Profile);
+  }
+
+  console.log("sending to io sockets...");
+  send_to_frontSocket(obj, pictureUrl, channelId, receiverId, count_unread);
+
+}
+
+function send_to_frontSocket(obj, pictureUrl, channelId, receiverId, unRead) {
+  let data = JSON.parse(JSON.stringify(obj));
+  data.unRead = unRead;
+  data.channelId = channelId;
+  data.id = receiverId;
+  data.pictureUrl = pictureUrl;
+  console.log('push to front object: ');
+  console.log(data);
+  io.sockets.emit('new message', data);
+
+  console.log("All sent!");
+}
+function emitIO_and_pushDB_internal(obj, roomId, agentNick) {
+  console.log("emitIO_and_pushDB_internal");
+  console.log("sending to firebase database...");
+  send_to_firebase_internal(obj, roomId);
+  send_to_frontSocket_internal(obj, roomId, agentNick);
+}
+
+function send_to_firebase_internal(obj, roomId) {
+  let flag = true;
+  // let count_unread = unRead;    //0 or 1
+  for( let prop in agentChatData ) {
+    let data = agentChatData[prop];
+    console.log("now data = ");
+    console.log(data);
+    if( data.Profile.roomId == roomId ) {
+      console.log("find room in database, prop = "+prop);
+      let length = data.Messages.length;    //訊息總長度
+      // count_unread += data.Profile.unRead;    //新的UNREAD加上舊的UNREAD數目
+      let updateObj = {};       //建立update物件
+      updateObj['/'+prop+'/Messages/'+length] = obj;  //將最新一則的訊息放至訊息陣列的最後
+      // if( unRead>0 ) updateObj['/'+prop+'/Profile/unRead'] = count_unread;    //如果新訊息是user發的，則須更新unread
+      agentDBRef.update(updateObj);
+      console.log('finish update db. chatData[prop] = ');
+      console.log(data);
+      flag = false;
+      break;
+    }
+  }
+  if( flag ) {
+    console.log("new room! impossible!!");
+  }
+
+  console.log("sending to io sockets...");
+
+}
+function send_to_frontSocket_internal(obj, roomId, agentNick) {
+  let data = JSON.parse(JSON.stringify(obj));
+  data.roomId = roomId;
+  data.agentNick = agentNick;
+  console.log('internal push to front object: ');
+  console.log(data);
+  io.sockets.emit('new internal message', {
+    sendObj: data,
+    roomId: roomId
+  });
+
+  console.log("All sent!");
+}
+function loadFbProfile(obj, psid) {
+
+  fb_bot.webhook('/webhook');
+  fb_bot.getProfile(psid).then(function(data) {
+
+    var fb_user_name = data.first_name + ' ' + data.last_name;
+    var fb_user_profilePic = data.profile_pic;
+    var fb_user_locale = data.locale;
+    var fb_user_gender = data.gender;
+
+    if (obj.message.attachments) {
+      //Checking if there are any image attachments
+      if (obj.message.attachments[0].type === "image") {
+        var imageURL = obj.message.attachments[0].payload.url;
+        obj.message = '<img src="' + imageURL + '" style="height:100px;width:100px;"/>';
+      } //if image
+      else if (obj.message.attachments[0].type === "video") {
+        var videoURL = obj.message.attachments[0].payload.url;
+        obj.message = '<video controls><source src="' + videoURL + '" type="video/mp4"></video>';
+
+      } //if video
+      else if (obj.message.attachments[0].type === "audio") {
+        var audioURL = obj.message.attachments[0].payload.url;
+        obj.message = '<audio controls><source src="' + audioURL + '" type="audio/mpeg"/></audio>';
+
+      } //if audio
+      else if (obj.message.attachments[0].type === "file") {
+        var fileURL = obj.message.attachments[0].payload.url;
+        obj.message = 'The user sent a file, click <a target="blank" href="' + fileURL + '">HERE</a> for download.';
+
+      } //if audio
+      else if (obj.message.attachments[0].type === "location") {
+        var locateURL = obj.message.attachments[0].url;
+        obj.message = 'The user sent a location, click <a target="blank" href="' + locateURL + '">HERE</a> for map link.';
+
+      } //if location
+    } else {
+      obj.message = obj.message.text;
+
+    }
+
+    for (let prop in chatData) {
+      if ( isSameUser(chatData[prop].Profile, obj.sender.id, 'fb') ) {
+        var count_unread_toFront = chatData[prop].Profile.unRead;
+        count_unread_toFront++;
+
+      }
+    } //for let prop in chatData
+
+    obj.id = obj.sender.id;
+    obj.owner = obj.recipient.id;
+    obj.name = fb_user_name;
+    obj.time = obj.timestamp;
+    obj.unRead = count_unread_toFront;
+    obj.channelId = 'FB';
+    obj.pictureUrl = fb_user_profilePic;
+    io.sockets.emit('new message', obj);
+
+
+    //======receive message==========
+
+    var senderID = obj.sender.id;
+    var recipientID = obj.recipient.id;
+    var timeOfMessage = obj.timestamp;
+    var message_text = obj.message;
+
+
+
+    console.log("Received message for user %d and page %d at %d with message:",
+    senderID, recipientID, timeOfMessage);
+    console.log(JSON.stringify(obj.message));
+
+    //===========================================
+
+    //=============saving to database============
+    let message_lineTochat = message_text;
+    let receiverId = senderID;
+    let receiver_name = fb_user_name;
+    let nowTime = Date.now();
+
+
+    var msgObj = {
+      owner: "user",
+      name: receiver_name,
+      time: nowTime,
+      message: message_lineTochat,
+      id: receiverId,
+      prof_pic: fb_user_profilePic,
+      locale: fb_user_locale,
+      gend: fb_user_gender
+    };
+
+
+    function emitIO_and_pushDB(obj) {
+
+      console.log("sending object user: ");
+      console.log(obj);
+
+      console.log("sending to new firebase database");
+      sendToNewFb(obj);
+      console.log("sending to new io sockets...");
+      console.log("All sent!");
+    }
+
+    function sendToNewFb(obj) {
+      let flag = true;
+      for (let prop in chatData) {
+        if ( isSameUser(chatData[prop].Profile, receiverId, 'fb') ) {
+          console.log("find user " + receiverId + " in database");
+          var count_unread = chatData[prop].Profile.unRead;
+          count_unread++;
+          let length = chatData[prop].Messages.length;
+          let updateObj = {};
+          updateObj['/' + prop + '/Messages/' + length] = obj;
+          newDBRef.update(updateObj);
+          newDBRef.child(prop).child("Profile").update({
+            unRead: count_unread,
+            photo: obj.prof_pic
+          });
+
+          flag = false;
+          break;
+        }
+      }
+      if (flag) {
+        console.log("new user come in");
+
+        let newData = {
+          Profile: {
+            nickname: obj.name,
+            userId: obj.id,
+            age: -1,
+            地區: obj.locale,
+            性別: obj.gend,
+            telephone: "",
+            address: "",
+            channelId: 'FB',
+            firstChat: nowTime,
+            首次聊天時間: nowTime,
+            recentChat: nowTime,
+            上次聊天時間: nowTime,
+            totalChat: 1,
+            總共聊天時間: 1,
+            avgChat: 1,
+            平均每次聊天時間: 1,
+            聊天次數: 1,
+            unRead: 1,
+            photo: obj.prof_pic
+          },
+          Messages: [obj]
+        };
+        newDBRef.push(newData);
+        io.sockets.emit('new user profile', newData.Profile);
+      }
+    } //sendTONewFb
+
+    emitIO_and_pushDB(msgObj);
+
+  }).catch(function(error) {
+    console.log('on line 1425 error, loadFbProfile');
+  }); //fb_bot
+
+} //loadFbProfile
+
+function isUrl(str) {
+  if(str.indexOf('.com') !== -1 ) return true;
+  else if(str.indexOf('.edu') !== -1 ) return true;
+  else if(str.indexOf('.net') !== -1 ) return true;
+  else if(str.indexOf('.io') !== -1 ) return true;
+  else if(str.indexOf('.org') !== -1 ) return true;
+  return false;
+} // end of isUrl
+
+function isSameUser(profile, userId, channelId) {
+  return profile.userId == userId && profile.channelId == channelId;
+}
+
+// EXPRESS functions and app use, KEEP THEM AT THE BOTTOM
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+/**
+* Normalize a port into a number, string, or false.
+*/
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+* Event listener for HTTP server "error" event.
+*/
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string' ?
+  'Pipe ' + port :
+  'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+    console.error(bind + ' requires elevated privileges');
+    process.exit(1);
+    break;
+    case 'EADDRINUSE':
+    console.error(bind + ' is already in use');
+    process.exit(1);
+    break;
+    default:
+    throw error;
+  }
+}
+
+/**
+* Event listener for HTTP server "listening" event.
+*/
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string' ?
+  'pipe ' + addr :
+  'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

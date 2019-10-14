@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css" />
+    <%# 自己的code%>
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <!-- Bootstrap -->
+    <link href="bendors/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="bendors/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <!-- NProgress -->
+    <link href="bendors/nprogress/nprogress.css" rel="stylesheet">
+    <!-- iCheck -->
+    <link href="bendors/iCheck/skins/flat/green.css" rel="stylesheet">
+    <!-- bootstrap-progressbar -->
+    <link href="bendors/bootstrap-progressbar/css/bootstrap-progressbar-3.3.4.min.css" rel="stylesheet">
+    <!-- JQVMap -->
+    <link href="bendors/jqvmap/dist/jqvmap.min.css" rel="stylesheet"/>
+    <!-- bootstrap-daterangepicker -->
+    <link href="bendors/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet">
+    <!-- Custom Theme Style -->
+    <link href="build/css/custom.min.css" rel="stylesheet">
+  </head>
+  <body class="nav-md">
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom:0;background-color:#00c300">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/" style="color:white;"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <li class="subTag" style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_overview"> 總覽</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="subTag"  style="display:none; font-size: 12px; line-height: auto;">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div id="home">
+    <!-- =================   bootstrap   ====================== -->
+    <!-- page content -->
+    <div><br><br><br></div>
+    <!--避免最上面倍nav bar擋到-->
+    <div class="right_col" role="main">
+    <!-- top tiles -->
+    <div class="row tile_count">
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-user"></i> 總聊天客戶數</span>
+        <div class="count">2500</div>
+        <span class="count_bottom"><i class="green">4% </i> 上週</span>
+      </div>
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-clock-o"></i> 平均聊天時間</span>
+        <div class="count">123.50</div>
+        <span class="count_bottom"><i class="green"><i class="fa fa-sort-asc"></i>3% </i> 上週</span>
+      </div>
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-user"></i> 平均分數</span>
+        <div class="count green">2,500</div>
+        <span class="count_bottom"><i class="green"><i class="fa fa-sort-asc"></i>34% </i> 上週</span>
+      </div>
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-user"></i> 評分人數</span>
+        <div class="count">4,567</div>
+        <span class="count_bottom"><i class="red"><i class="fa fa-sort-desc"></i>12% </i> 上週</span>
+      </div>
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-user"></i> 總下單數</span>
+        <div class="count">2,315</div>
+        <span class="count_bottom"><i class="green"><i class="fa fa-sort-asc"></i>34% </i> 上週</span>
+      </div>
+      <div class="col-md-2 col-sm-4 col-xs-6 tile_stats_count">
+        <span class="count_top"><i class="fa fa-user"></i> 總訊息數</span>
+        <div class="count">7,325</div>
+        <span class="count_bottom"><i class="green"><i class="fa fa-sort-asc"></i>34% </i> 上週</span>
+      </div>
+    </div>
+    <!-- /top tiles -->
+    <div class="row">
+      <div class="col-md-12 col-sm-12 col-xs-12">
+        <div class="dashboard_graph">
+          <div class="row x_title">
+            <div class="col-md-6">
+              <h3>網頁瀏覽人數  <small>九樓壹號官網</small></h3>
+            </div>
+          </div>
+          <div class="col-md-9 col-sm-9 col-xs-12">
+            <!-- Google api dash -->
+            <div id="embed-api-auth-container"></div>
+            <div id="chart-container"></div>
+            <!--        <div id="view-selector-container"></div> -->
+          </div>
+          <div class="col-md-3 col-sm-3 col-xs-12 bg-white">
+            <div class="x_title">
+              <h2>Top Campaign Performance</h2>
+              <div class="clearfix"></div>
+            </div>
+            <div class="col-md-12 col-sm-12 col-xs-6">
+              <div>
+                <p>Facebook Campaign</p>
+                <div class="">
+                  <div class="progress progress_sm" style="width: 76%;">
+                    <div class="progress-bar bg-green" role="progressbar" data-transitiongoal="80"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p>Twitter Campaign</p>
+                <div class="">
+                  <div class="progress progress_sm" style="width: 76%;">
+                    <div class="progress-bar bg-green" role="progressbar" data-transitiongoal="60"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-12 col-sm-12 col-xs-6">
+              <div>
+                <p>Conventional Media</p>
+                <div class="">
+                  <div class="progress progress_sm" style="width: 76%;">
+                    <div class="progress-bar bg-green" role="progressbar" data-transitiongoal="40"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p>Bill boards</p>
+                <div class="">
+                  <div class="progress progress_sm" style="width: 76%;">
+                    <div class="progress-bar bg-green" role="progressbar" data-transitiongoal="50"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+      </div>
+    </div>
+    <br />
+    <div class="row">
+    <div class="col-md-4 col-sm-4 col-xs-12">
+    <div class="x_panel tile fixed_height_320">
+      <div class="x_title">
+        <h2>App Versions</h2>
+        <ul class="nav navbar-right panel_toolbox">
+          <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-wrench"></i></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="#">Settings 1</a>
+              </li>
+              <li><a href="#">Settings 2</a>
+              </li>
+            </ul>
+          </li>
+          <li><a class="close-link"><i class="fa fa-close"></i></a>
+          </li>
+        </ul>
+        <div class="clearfix"></div>
+      </div>
+      <div class="x_content">
+        <h4>App Usage across versions</h4>
+        <div class="widget_summary">
+          <div class="w_left w_25">
+            <span>0.1.5.2</span>
+          </div>
+          <div class="w_center w_55">
+            <div class="progress">
+              <div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 66%;">
+                <span class="sr-only">60% Complete</span>
+              </div>
+            </div>
+          </div>
+          <div class="w_right w_20">
+            <span>123k</span>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+        <div class="widget_summary">
+          <div class="w_left w_25">
+            <span>0.1.5.3</span>
+          </div>
+          <div class="w_center w_55">
+            <div class="progress">
+              <div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 45%;">
+                <span class="sr-only">60% Complete</span>
+              </div>
+            </div>
+          </div>
+          <div class="w_right w_20">
+            <span>53k</span>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+        <div class="widget_summary">
+          <div class="w_left w_25">
+            <span>0.1.5.4</span>
+          </div>
+          <div class="w_center w_55">
+            <div class="progress">
+              <div class="progress-bar bg-green" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 25%;">
+                <span class="sr-only">60% Complete</span>
+              </div>
+            </div>
+          </div>
+          <div class="w_right w_20">
+            <span>23k</span>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+        <div class="widget_summary">
+          <div class="w_left w_25">
+            <span>0.1.5.5</span>
+          </div>
+          <div class="panel-body">
+            <div id="embed-api-auth-container"></div>
+            <div id="chart-container"></div>
+            <!--        <div id="view-selector-container"></div> -->
+          </div>
+        </div>
+        <!-- MULTIPLE VIEWS -->
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <i class="fa fa-bar-chart-o fa-fw"></i> <span class="name" id="收入分析">國家來源</span>
+          </div>
+          <div class="panel-body">
+            <div id="embed-api-auth-container"></div>
+            <div id="chart-1-container"></div>
+            <!--        <div id="chart-2-container"></div>  -->
+            <div style="display:none" id="view-selector-1-container"></div>
+            <div style="display:none" id="view-selector-2-container"></div>
+          </div>
+        </div>
+        <!-- INTERACTIVE CHARTS-->
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <i class="fa fa-clock-o fa-fw"></i> <span class="name" id="回饋">瀏覽器</span>
+          </div>
+          <div class="panel-body">
+            <div id="embed-api-auth-container"></div>
+            <div style="display:none" id="view-selector-container"></div>
+            <div id="main-chart-container"></div>
+            <div id="breakdown-chart-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+    <!--============================================ -->
+    <!-- =========================================== -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.1.2/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="javascripts/dashboard.js"></script>
+    <!--- =========FOR GOOGLE ANALYTICS========= -->
+    <script>
+      (function(w,d,s,g,js,fs){
+        g=w.gapi||(w.gapi={});g.analytics={q:[],ready:function(f){this.q.push(f);}};
+        js=d.createElement(s);fs=d.getElementsByTagName(s)[0];
+        js.src='https://apis.google.com/js/platform.js';
+        fs.parentNode.insertBefore(js,fs);js.onload=function(){g.load('analytics');};
+      }(window,document,'script'));
+    </script>
+    <script>
+      gapi.analytics.ready(function() {
+        /**
+         * Authorize the user immediately if the user has already granted access.
+         * If no access has been created, render an authorize button inside the
+         * element with the ID "embed-api-auth-container".
+         */
+        gapi.analytics.auth.authorize({
+          container: 'embed-api-auth-container',
+          clientid: '893891576690-e7sjrhcipgj0ekpulers7l2itsagdcrl.apps.googleusercontent.com'
+        });
+      /*=====================DASHBOARD======================*/
+        /**
+         * Create a new ViewSelector instance to be rendered inside of an
+         * element with the id "view-selector-container".
+         */
+        var viewSelector = new gapi.analytics.ViewSelector({
+          container: 'view-selector-container'
+        });
+        // Render the view selector to the page.
+        viewSelector.execute();
+        /**
+         * Create a new DataChart instance with the given query parameters
+         * and Google chart options. It will be rendered inside an element
+         * with the id "chart-container".
+         */
+        var dataChart = new gapi.analytics.googleCharts.DataChart({
+          query: {
+            metrics: 'ga:sessions',
+            dimensions: 'ga:date',
+            'start-date': '30daysAgo',
+            'end-date': 'yesterday'
+          },
+          chart: {
+            container: 'chart-container',
+            type: 'LINE',
+            options: {
+              width: '100%'
+            }
+          }
+
+
+
+           });
+           /**
+            * Render the dataChart on the page whenever a new view is selected.
+            */
+           viewSelector.on('change', function(ids) {
+             dataChart.set({query: {ids: ids}}).execute();
+           });
+         });
+    </script>
+    <script>
+      /*====================MULTIPLE VIEWS=========================*/
+      gapi.analytics.ready(function() {
+        /**
+         * Authorize the user immediately if the user has already granted access.
+         * If no access has been created, render an authorize button inside the
+         * element with the ID "embed-api-auth-container".
+         */
+        gapi.analytics.auth.authorize({
+          container: 'embed-api-auth-container',
+          clientid: '893891576690-e7sjrhcipgj0ekpulers7l2itsagdcrl.apps.googleusercontent.com'
+        });
+        /**
+         * Create a ViewSelector for the first view to be rendered inside of an
+         * element with the id "view-selector-1-container".
+         */
+        var viewSelector1 = new gapi.analytics.ViewSelector({
+          container: 'view-selector-1-container'
+        });
+        /**
+         * Create a ViewSelector for the second view to be rendered inside of an
+         * element with the id "view-selector-2-container".
+         */
+        var viewSelector2 = new gapi.analytics.ViewSelector({
+          container: 'view-selector-2-container'
+        });
+        // Render both view selectors to the page.
+        viewSelector1.execute();
+        viewSelector2.execute();
+        /**
+         * Create the first DataChart for top countries over the past 30 days.
+         * It will be rendered inside an element with the id "chart-1-container".
+         */
+        var dataChart1 = new gapi.analytics.googleCharts.DataChart({
+          query: {
+            metrics: 'ga:sessions',
+            dimensions: 'ga:country',
+            'start-date': '30daysAgo',
+            'end-date': 'yesterday',
+            'max-results': 6,
+            sort: '-ga:sessions'
+          },
+          chart: {
+            container: 'chart-1-container',
+            type: 'PIE',
+            options: {
+              width: '100%',
+              pieHole: 4/9
+            }
+          }
+        });
+        /**
+         * Create the second DataChart for top countries over the past 30 days.
+         * It will be rendered inside an element with the id "chart-2-container".
+         */
+        var dataChart2 = new gapi.analytics.googleCharts.DataChart({
+          query: {
+            metrics: 'ga:sessions',
+            dimensions: 'ga:country',
+            'start-date': '30daysAgo',
+            'end-date': 'yesterday',
+            'max-results': 6,
+            sort: '-ga:sessions'
+          },
+          chart: {
+            container: 'chart-2-container',
+            type: 'PIE',
+            options: {
+              width: '100%',
+              pieHole: 4/9
+            }
+          }
+        });
+        /**
+         * Update the first dataChart when the first view selecter is changed.
+         */
+        viewSelector1.on('change', function(ids) {
+          dataChart1.set({query: {ids: ids}}).execute();
+        });
+        /**
+         * Update the second dataChart when the second view selecter is changed.
+         */
+        viewSelector2.on('change', function(ids) {
+          dataChart2.set({query: {ids: ids}}).execute();
+        });
+      });
+    </script>
+    <script>
+      /*================INTERACTIVE CHARTS=====================*/
+      gapi.analytics.ready(function() {
+        /**
+         * Authorize the user immediately if the user has already granted access.
+         * If no access has been created, render an authorize button inside the
+         * element with the ID "embed-api-auth-container".
+         */
+        gapi.analytics.auth.authorize({
+          container: 'embed-api-auth-container',
+          clientid: '893891576690-e7sjrhcipgj0ekpulers7l2itsagdcrl.apps.googleusercontent.com'
+        });
+        /**
+         * Create a new ViewSelector instance to be rendered inside of an
+         * element with the id "view-selector-container".
+         */
+        var viewSelector = new gapi.analytics.ViewSelector({
+          container: 'view-selector-container'
+        });
+        // Render the view selector to the page.
+        viewSelector.execute();
+        /**
+         * Create a table chart showing top browsers for users to interact with.
+         * Clicking on a row in the table will update a second timeline chart with
+         * data from the selected browser.
+         */
+        var mainChart = new gapi.analytics.googleCharts.DataChart({
+          query: {
+            'dimensions': 'ga:browser',
+            'metrics': 'ga:sessions',
+            'sort': '-ga:sessions',
+            'max-results': '6'
+          },
+          chart: {
+            type: 'TABLE',
+            container: 'main-chart-container',
+            options: {
+              width: '100%'
+            }
+          }
+        });
+        /**
+         * Create a timeline chart showing sessions over time for the browser the
+         * user selected in the main chart.
+         */
+        var breakdownChart = new gapi.analytics.googleCharts.DataChart({
+          query: {
+            'dimensions': 'ga:date',
+            'metrics': 'ga:sessions',
+            'start-date': '7daysAgo',
+            'end-date': 'yesterday'
+          },
+          chart: {
+            type: 'LINE',
+            container: 'breakdown-chart-container',
+            options: {
+              width: '100%'
+            }
+          }
+        });
+        /**
+         * Store a refernce to the row click listener variable so it can be
+         * removed later to prevent leaking memory when the chart instance is
+         * replaced.
+         */
+        var mainChartRowClickListener;
+        /**
+         * Update both charts whenever the selected view changes.
+         */
+        viewSelector.on('change', function(ids) {
+          var options = {query: {ids: ids}};
+          // Clean up any event listeners registered on the main chart before
+          // rendering a new one.
+          if (mainChartRowClickListener) {
+            google.visualization.events.removeListener(mainChartRowClickListener);
+          }
+          mainChart.set(options).execute();
+          breakdownChart.set(options);
+          // Only render the breakdown chart if a browser filter has been set.
+          if (breakdownChart.get().query.filters) breakdownChart.execute();
+        });
+        /**
+         * Each time the main chart is rendered, add an event listener to it so
+         * that when the user clicks on a row, the line chart is updated with
+         * the data from the browser in the clicked row.
+         */
+        mainChart.on('success', function(response) {
+          var chart = response.chart;
+          var dataTable = response.dataTable;
+          // Store a reference to this listener so it can be cleaned up later.
+          mainChartRowClickListener = google.visualization.events
+              .addListener(chart, 'select', function(event) {
+            // When you unselect a row, the "select" event still fires
+            // but the selection is empty. Ignore that case.
+            if (!chart.getSelection().length) return;
+            var row =  chart.getSelection()[0].row;
+            var browser =  dataTable.getValue(row, 0);
+            var options = {
+              query: {
+                filters: 'ga:browser==' + browser
+              },
+              chart: {
+                options: {
+                  title: browser
+                }
+              }
+            };
+            breakdownChart.set(options).execute();
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

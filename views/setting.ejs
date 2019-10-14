@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="stylesheets/sb-admin-2.css">
+    <%# Morris Charts CSS%>
+    <link rel="stylesheet" href="vendor/morrisjs/morris.css" >
+    <%# 自己的code%>
+    <link rel="stylesheet" href="stylesheets/main.css" />
+    <link rel="stylesheet" href="stylesheets/tag.css" />
+    <link rel="stylesheet" href="stylesheets/setting.css" />
+    <link rel="stylesheet" href="stylesheets/partials/firebase-disable.css" />
+  </head>
+  <body>
+    <div id="wrapper">
+      <nav class="navbar navbar-default navbar-static-top chatshier-navbar navbar-fixed-top" role="navigation">
+        <div class="navbar-header">
+          <a class="navbar-brand white" href="/"> Chatshier </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-left">
+          <li>
+            <a href="/chat">| <i class="fa fa-commenting fa-fw"></i> 聊天室</a>
+          </li>
+          <li id="nav_message">
+            <a href="#">| <i class="fa fa-commenting fa-fw"></i> 訊息</a>
+          </li>
+          <!-- <li class="sub-tag"> -->
+          <!-- <a href="/message_overview"> 總覽</a> -->
+          <!-- </li> -->
+          <li class="sub-tag">
+            <a href="/message_autoreply"> 自動回覆</a>
+          </li>
+          <li class="sub-tag">
+            <a href="/message_keywordsreply"> 關鍵字回覆</a>
+          </li>
+          <li class="sub-tag">
+            <a href="/message_add_friend_reply"> 加好友回覆</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-top-links navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+              <i class="fa fa-cog fa-lg"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-user">
+              <li><a href="/setting"><i class="fa fa-user fa-fw"></i> 設定</a></li>
+              <li class="divider"></li>
+              <li><a href="/login" id="signoutBtn"><i class="fa fa-sign-out fa-fw"></i> 登出</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="container-fluid">
+      <div class="col-md-2 left margin-top-twenty">
+        <ul class="nav nav-pills nav-stacked">
+          <li class="active"><a data-toggle="pill" href="#menu0">基本設定</a></li>
+          <li><a data-toggle="pill" href="#menu1">用戶資料</a></li>
+          <li><a data-toggle="pill" href="#menu2">聊天室帳號</a></li>
+          <li><a data-toggle="pill" href="#menu3">標籤</a></li>
+          <li><a data-toggle="modal" href="#create-internal-room">新建內部聊天室</a></li>
+        </ul>
+      </div>
+      <div class="tab-content">
+        <div id="menu0" class="tab-pane fade in active">
+          <h3>基本設定
+            <button type="button" class="btn btn-default" id="prof-edit" data-toggle="modal" data-target="#basicModal">
+              <span class="fa fa-pencil-square-o"></span>編輯
+            </button>
+          </h3>
+          <div class="col-md-8 col-lg-8 panel-info prof-wid">
+            <div class="panel-heading">
+              <h3 class="panel-title" id="prof-name"></h3>
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-md-12 col-lg-12 ">
+                  <table class="table table-user-information">
+                    <tbody>
+                      <tr>
+                        <td>公司: </td>
+                        <td id="prof-company"></td>
+                      </tr>
+                      <tr>
+                        <td>Logo: </td>
+                        <td id="prof-logo"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="menu1" class="tab-pane fade">
+          <h3>用戶資料
+            <button type="button" class="btn btn-default" id="prof-edit" data-toggle="modal" data-target="#accountModal">
+              <span class="fa fa-pencil-square-o"></span>編輯
+            </button>
+          </h3>
+          <div class="col-md-8 col-lg-8 panel-info prof-wid">
+            <div class="panel-heading">
+              <h3 class="panel-title" id="prof-name"></h3>
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-md-12 col-lg-12 ">
+                  <table class="table table-user-information">
+                    <tbody>
+                      <tr>
+                        <td>生日: </td>
+                        <td id="prof-dob"></td>
+                      </tr>
+                      <tr>
+                        <td>電子郵件: </td>
+                        <td id="prof-email"></td>
+                      </tr>
+                      <tr>
+                        <td>性別: </td>
+                        <td id="prof-gender"></td>
+                      </tr>
+                      <tr>
+                        <td>手機: </td>
+                        <td id="prof-phone"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="menu2" class="tab-pane fade">
+          <h3>聊天室帳號
+            <button type="button" class="btn btn-default" id="prof-add" data-toggle="modal" data-target="#profModal-add" disabled="disabled">
+              <span class="fa fa-plus"></span> 新增
+            </button>
+          </h3>
+          <div class="col-md-8 col-lg-8 panel-info prof-wid">
+            <div id="error-message" hidden>
+              請按編輯帳戶資料按鈕編輯檔案
+            </div>
+            <div class="col-md-11 col-lg-11 panel-info prof-wid">
+              <div class="panel-heading">
+                <h3 class="panel-title" id="prof-name"></h3>
+              </div>
+              <div class="panel-body">
+                <div class="row">
+                  <div class=" col-md-12 col-lg-12 ">
+                    <table class="table table-user-information">
+                      <tbody>
+                        <tr hidden>
+                          <td>ID: </td>
+                          <td id="prof-id"></td>
+                        </tr>
+                        <tr hidden>
+                          <td>Nickname: </td>
+                          <td id="prof-nick"></td>
+                        </tr>
+                        <tr class="active">
+                          <th class="col-md-3 col-lg-3">群組1</th>
+                          <th class="col-md-9 col-lg-9">
+                            <div id="group1" class="line"><button type="button" class="btn btn-default pull-right" id="prof-edit" data-toggle="modal" data-target="#profModal"><span class="fa fa-pencil-square-o"></span> 編輯</button></div>
+                          </th>
+                        </tr>
+                        <tr>
+                          <td>群組名:</td>
+                          <td id="prof-name1"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Id 1: </td>
+                          <td id="prof-channelId_1"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Secret 1: </td>
+                          <td id="prof-channelSecret_1"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Access Token 1: </td>
+                          <td class="long-token" id="prof-channelAccessToken_1"></td>
+                        </tr>
+                        <tr class="active">
+                          <th class="col-md-3 col-lg-3">群組2</th>
+                          <th class="col-md-9 col-lg-9">
+                            <div id="group2" class="line"><button type="button" class="btn btn-default pull-right" id="prof-edit" data-toggle="modal" data-target="#profModal"><span class="fa fa-pencil-square-o"></span> 編輯</button></div>
+                          </th>
+                        </tr>
+                        <tr>
+                          <td>群組名:</td>
+                          <td id="prof-name2"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Id 2: </td>
+                          <td id="prof-channelId_2"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Secret 2: </td>
+                          <td id="prof-channelSecret_2"></td>
+                        </tr>
+                        <tr>
+                          <td>Channel Access Token 2: </td>
+                          <td class="long-token" id="prof-channelAccessToken_2"></td>
+                        </tr>
+                        <tr>
+                          <tr class="active">
+                            <th class="col-md-3 col-lg-3">群組3</th>
+                            <th class="col-md-9 col-lg-9">
+                              <div id="group3" class="fb"><button type="button" class="btn btn-default pull-right" id="prof-edit" data-toggle="modal" data-target="#profModal"><span class="fa fa-pencil-square-o"></span> 編輯</button></div>
+                            </th>
+                          </tr>
+                          <td>Facebook群組名:</td>
+                          <td id="prof-fbPageName"></td>
+                        </tr>
+                        <tr>
+                          <td>Page Id: </td>
+                          <td id="prof-fbPageId"></td>
+                        </tr>
+                        <tr>
+                          <td>App ID: </td>
+                          <td id="prof-fbAppId"></td>
+                        </tr>
+                        <tr>
+                          <td>App Secret: </td>
+                          <td id="prof-fbAppSecret"></td>
+                        </tr>
+                        <tr>
+                          <td>Validation Token: </td>
+                          <td id="prof-fbValidToken"></td>
+                        </tr>
+                        <tr>
+                          <td>Page Token: </td>
+                          <td class="long-token" id="prof-fbPageToken"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="menu3" class="tab-pane fade">
+          <h3>標籤
+            <button type="button" class="btn btn-default add-tag" href=".tag-name:last">
+              <span class="fa fa-plus fa-fw"></span> 新增
+            </button>
+          </h3>
+          <div class="col-md-8 col-lg-8 panel-info prof-wid">
+            <div class="float-down">
+              <div id="tag-tab" class="col-md-11 col-lg-11 panel-info prof-wid padding-zero">
+                <div class="panel-heading">
+                  <h3 class="panel-title" id="prof-name"></h3>
+                </div>
+                <div class="panel-body">
+                  <div class="row">
+                    <div class=" col-md-12 col-lg-12 ">
+                      <table class="table table-striped" id="tagTable">
+                        <thead>
+                          <tr>
+                            <th> 欄位名稱 </th>
+                            <th> 欄位類別 </th>
+                            <th> 欄位設定 </th>
+                            <th> 移動 </th>
+                            <th> 刪除 </th>
+                            <th> 可變更<br/>(系統設定) </th>
+                            <th> &nbsp;</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tagTable-body">
+                        </tbody>
+                      </table>
+                      <div class="align-center">
+                        <button type="button" class="btn btn-default all-confirm bold-word">確認</button>
+                        <button type="button" class="btn btn-default all-cancel bold-word">取消</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="modal-container">
+        <!-- Basic Modal -->
+        <div class="modal fade" id="basicModal" tabindex="-1" role="dialog" aria-labelledby="profModalTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="profModalTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="POST" action="/foo-route">
+                  <!-- 編號 -->
+                  <div class="form-group" hidden>
+                    <label for="edit-id" class="col-2 col-form-label">ID</label>
+                    <span id="prof-edit-id"></span>
+                  </div>
+                  <!-- Company -->
+                  <div class="form-group">
+                    <label for="prof-edit-company" class="col-2 col-form-label">公司: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="prof-edit-company">
+                    </div>
+                  </div>
+                  <!-- Logo -->
+                  <div class="form-group">
+                    <label for="prof-edit-logo" class="col-2 col-form-label">Logo: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="prof-edit-logo">
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="prof-submit-basic">確認</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Account Modal -->
+        <div class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="profModalTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="profModalTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="POST" action="/foo-route">
+                  <!-- 編號 -->
+                  <div class="form-group" hidden>
+                    <label for="edit-id" class="col-2 col-form-label">ID</label>
+                    <span id="prof-edit-id"></span>
+                  </div>
+                  <!-- 出生日期 -->
+                  <div class="form-group">
+                    <label for="prof-edit-dob" class="col-2 col-form-label">出生日期: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="date" value="" id="prof-edit-dob">
+                    </div>
+                  </div>
+                  <!-- 郵件 -->
+                  <div class="form-group">
+                    <label for="prof-edit-email" class="col-2 col-form-label">電子郵件: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="email" value="" id="prof-edit-email">
+                    </div>
+                  </div>
+                  <!-- 性別 -->
+                  <div class="form-group">
+                    <label for="prof-edit-gender">性別: </label>
+                    <select class="form-control" id="prof-edit-gender">
+                      <option>Male</option>
+                      <option>Female</option>
+                    </select>
+                  </div>
+                  <!-- 電話 -->
+                  <div class="form-group">
+                    <label for="prof-edit-phone" class="col-2 col-form-label">手機: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="prof-edit-phone">
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="prof-submit-action">確認</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Profile Modal -->
+        <div class="modal fade" id="profModal" tabindex="-1" role="dialog" aria-labelledby="profModalTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="profModalTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="POST" action="/foo-route">
+                  <!-- 編號 -->
+                  <div class="form-group" hidden>
+                    <label for="edit-id" class="col-2 col-form-label">ID</label>
+                    <span id="prof-edit-id"></span>
+                  </div>
+                  <!-- Channel Name -->
+                  <div id="prof-edit-line-1">
+                    <div class="form-group">
+                      <label for="prof-edit-channelId_1" class="col-2 col-form-label">Channel Name 1: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-name1">
+                      </div>
+                    </div>
+                    <!-- Channel Id -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelId_1" class="col-2 col-form-label">Channel Id 1: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelId_1">
+                      </div>
+                    </div>
+                    <!-- Channel Secret -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelSecret_1" class="col-2 col-form-label">Channel Secret 1: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelSecret_1">
+                      </div>
+                    </div>
+                    <!-- Channel Access Token -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelAccessToken_1" class="col-2 col-form-label">Channel Access Token 1: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelAccessToken_1">
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Channel Name -->
+                  <div id="prof-edit-line-2">
+                    <div class="form-group">
+                      <label for="prof-edit-channelId_1" class="col-2 col-form-label">Channel Name 2: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-name2">
+                      </div>
+                    </div>
+                    <!-- Channel Id -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelId_2" class="col-2 col-form-label">Channel Id 2: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelId_2">
+                      </div>
+                    </div>
+                    <!-- Channel Secret -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelSecret_2" class="col-2 col-form-label">Channel Secret 2: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelSecret_2">
+                      </div>
+                    </div>
+                    <!-- Channel Access Token -->
+                    <div class="form-group">
+                      <label for="prof-edit-channelAccessToken_2" class="col-2 col-form-label">Channel Access Token 2: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-channelAccessToken_2">
+                      </div>
+                    </div>
+                  </div>
+                  <div id="prof-edit-fb">
+                    <div class="form-group">
+                      <label for="prof-edit-fbPageName" class="col-2 col-form-label">Facebook Page Name: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbPageName">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="prof-edit-fbPageId" class="col-2 col-form-label">Page Id: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbPageId">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="prof-edit-fbAppId" class="col-2 col-form-label">App ID: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbAppId">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="prof-edit-fbAppSecret" class="col-2 col-form-label">App Secret: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbAppSecret">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="prof-edit-fbValidToken" class="col-2 col-form-label">Validation Token:: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbValidToken">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="prof-edit-fbPageToken" class="col-2 col-form-label">Page Token: </label>
+                      <div class="col-4">
+                        <input class="form-control" type="tel" value="" id="prof-edit-fbPageToken">
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="prof-submit-profile">確認</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Create Internal Room Modal -->
+        <div class="modal fade" id="create-internal-room" tabindex="-1" role="dialog" aria-labelledby="profModalTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="profModalTitle"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="POST" action="/foo-route">
+                  <div class="form-group">
+                    <label for="create-internal-room-name" class="col-2 col-form-label">群組名稱: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="create-internal-room-name">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="create-internal-photo" class="col-2 col-form-label">群組圖片(URL): </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="create-internal-photo">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="create-internal-description" class="col-2 col-form-label">簡易描述: </label>
+                    <div class="col-4">
+                      <input class="form-control" type="tel" value="" id="create-internal-description">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="create-internal-owner" class="col-2 col-form-label">老大: </label>
+                    <div class="col-4">
+                      <select id="create-internal-owner">
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="create-internal-agents" class="col-2 col-form-label">成員: </label>
+                    <div class="col-4">
+                      <button type="button" data-toggle="dropdown" aria-expanded="false">
+                        <span class="multi-select-text" id="create-internal-agents" rel="">
+                          未選擇
+                        </span>
+                        <b class="caret"></b>
+                      </button>
+                      <ul class="multi-select-container dropdown-menu" rel="create-internal-agents">
+                      </ul>
+                    </div>
+                  </div>
+
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="prof-submit-create-internal-room">確認</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% include ../views/partials/firebase_disable.ejs %>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+    <script src="config/firebaseConfig.js"></script>
+    <script src="javascripts/firebaseAuth.js"></script>
+    <script src="javascripts/navigation.js"></script>
+    <script src="javascripts/setting.js"></script>
+    <script src="javascripts/sb-admin-2.js"></script>
+    <script src="javascripts/partials/firebase-disable.js"></script>
+  </body>
+</html>
