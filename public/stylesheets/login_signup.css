@@ -1,0 +1,19 @@
+/*Login and register*/
+.bg-login, .bg-register {
+  background-color: #e6e6e6;
+}
+
+.login-header, .register-header {
+  font-weight: bold;
+  text-align: center;
+}
+
+#log-error, #reg-error {
+  color: #ff3535;
+  display: none;
+  text-align: center;
+}
+
+.direct-login, .direct-register {
+  text-align: center;
+}

@@ -1,0 +1,61 @@
+body{
+  padding-top:60px;
+}
+/* fix padding under menu after resize */
+@media (max-width: 414px) {
+  .prof-wid{
+    width: 100%;
+  }
+}
+@media screen and (max-width: 767px) {
+  body { padding-top: 60px; }
+  .prof-wid{
+    width: 100%;
+  }
+}
+@media screen and (min-width:768px) and (max-width: 991px) {
+  body { padding-top: 110px; }
+}
+@media screen and (min-width: 992px) {
+  body { padding-top: 60px; }
+}
+@media (max-width: 1141px) {
+  .prof-wid {
+    width: 95%;
+  }
+}
+
+.left{
+  position: fixed;
+  left: 0;
+}
+.tab-content{
+  position: relative;
+  padding: 0 50px;
+  left: 15%;
+}
+.long-token {
+  max-width: 100px;
+  overflow-x:scroll;
+}
+.margin-top-twenty{
+  margin:20px 0;
+}
+.padding-zero{
+  padding:0px;
+}
+.align-center{
+  text-align:center;
+}
+.bold-word{
+  font-weight:bold;
+}
+
+.prof-wid{
+
+}
+.multi-select-container {
+  padding: 5px 5px;
+  top: auto;
+  left: auto;
+}

@@ -1,0 +1,328 @@
+.ticket_memo::-webkit-scrollbar {
+    width: 1em;
+}
+.ticket_memo{
+    overflow: scroll !important;
+    height:700px;
+}
+
+#form-wrap {
+  position: relative;
+  left: 270px;
+  width: 70%
+}
+
+#edit-subt, #view-subt {
+  list-style: none;
+  position: relative;
+  left: -5%;
+}
+
+.bigFont {
+  font-size: 2em;
+}
+
+#ticket-header, #ticket-search, #ticket-tab {
+  position: relative;
+  /*border: solid 5px black;
+  height: 100px;*/
+}
+
+#ticket-header {
+  height: 30px;
+}
+
+#ticket-search {
+  height: 20px;
+}
+
+#header-left {
+  position: absolute;
+  left: 0;
+  /*border: solid 5px red;*/
+  width: 50%;
+  height: 50px;
+}
+
+#header-right {
+  position: absolute;
+  right: 0;
+  /*border: solid 5px orange;*/
+  width: 50%;
+  height: 50px;
+}
+
+.add-btn {
+  position: relative;
+}
+
+.inner-add {
+  position: absolute;
+  right: 0;
+}
+
+.inner-add-complete {
+  position: absolute;
+  right: 20%;
+  margin: 1% 5% ;
+}
+
+
+input, select {
+  width: 15%;
+}
+
+/*Tabs*/
+/* Style the tab */
+div.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+div.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+div.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+div.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+/*ticket form*/
+#task-list {
+  list-style: none;
+  border: solid 1px black;
+}
+
+@media (max-width: 1135px){
+  #ticket-wrap {
+    position: relative;
+    left: 250px;
+    width: 75%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 270px;
+    width: 70%
+  }
+}
+
+@media (max-width: 1000px){
+  #ticket-wrap {
+    position: relative;
+    left: 250px;
+    width: 72%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 270px;
+    width: 60%
+  }
+}
+
+@media (max-width: 767px){
+  #ticket-wrap {
+    position: relative;
+    left: 0px;
+    width: 100%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 20px;
+    width: 95%;
+  }
+}
+
+@media (max-width: 414px){
+  #ticket-wrap {
+    position: relative;
+    left: 0px;
+    width: 100%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 20px;
+    width: 95%;
+  }
+}
+
+body,html{height: 100%}
+
+h1 {
+  color: white ;
+  background-color: black;
+  padding: 1% 5%;
+  margin: 0;
+}
+
+h2{
+  font-size: 16px ;
+  margin: 0;
+  color: white;
+  background-color: rgb(4, 92, 76);
+  padding: 1% 5%;
+}
+
+.ticket_search_bar {
+  right: 1%;
+  margin: 1% 5% ;
+  position: absolute;
+}
+
+.ticket {
+  display: flex;
+  justify-content: center;
+  margin: 5% 10% ;
+  border : 1px solid gray ;
+  border-radius: 5px;
+  width: 100%
+}
+
+td, th {
+    border-bottom:  1px solid rgb(5, 82, 87);
+    text-align: left;
+    padding: 8px;
+    margin: 2px 0 ;
+}
+
+tr:nth-child(even) {
+    background-color: rgb(169, 196, 186);
+}
+table { width: 100%}
+.sidebar{
+  width: 20%;
+}
+.main{
+  display: flex;
+  margin: 0;
+  width: 100%
+}
+
+.select{
+  width : 100px ;
+}
+
+.inner{
+  margin: 0 15px ;
+  position: relative;
+  float: left;
+  width: 80%;
+}
+
+.ticket_content:hover{
+  cursor:  pointer;
+  background-color: rgba(183, 208, 181, 0.77) ;
+  transition: .3s ease-in-out ;
+
+}
+.overdue{
+  padding: 1px 10px;
+  margin: 1px;
+  border-radius: 8px ;
+  background-color: rgb(227, 79, 79) ;
+  color: white ;
+  font-weight: bold;
+}
+
+.non{
+  background-color: rgb(91, 195, 92)
+}
+#ID_num{
+  display: flex;
+  width: 45px;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px ;
+  margin-right: 10px;
+  font-weight: bold;
+  color: white;
+  border-radius: 50%;
+}
+.modal-title{
+  font-size: 1.5em;
+  font-weight: bolder;
+  border-bottom: none;
+  display: flex;
+  align-items: flex-end;
+}
+textarea {
+   /* will prevent resizing horizontally */
+   resize:vertical;
+}
+input[type="range"]{
+  -webkit-appearance: none;
+  overflow:hidden;     /* 限定範圍 */
+  width:200px;
+  height:20px;
+  outline : none;      /* 避免點選會有藍線或虛線 */
+  background:none;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  position: relative;    /* 設為相對位置，為了前後區塊的絕對位置而設定 */
+  width:10px;
+  height:10px;
+  background:#f22;
+  border-radius:50%;
+  transition:.2s;        /* 點選放大時候的漸變時間 */
+}
+input[type="range"]::-webkit-slider-thumb:before,
+input[type="range"]::-webkit-slider-thumb:after
+{
+  position: absolute;
+  top: 3px;
+  width: 2000px;          /* 長度很長沒關係，因為剛剛有用 overflow:hidden 了 */
+  height: 4px;
+  content:"";
+  pointer-events: none;   /* 讓滑鼠可以點擊穿透偽元素，不然會點不到下面 */
+  transition:.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:before{
+  left: -1997px;
+  background: #f22;
+}
+input[type="range"]::-webkit-slider-thumb:after {
+  left: 10px;
+  background: #edc;
+}
+input[type="range"]:active::-webkit-slider-thumb:before,
+input[type="range"]:active::-webkit-slider-thumb:after
+{
+  top: 6px;
+}
+
+input[type="range"]:active::-webkit-slider-thumb{
+  width:16px;
+  height:16px;
+}
+
+input[type="range"]:active::-webkit-slider-thumb:after {
+  left: 16px;
+}

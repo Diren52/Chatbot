@@ -1,0 +1,27 @@
+.alert.alert-chatshier{
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.2), 0 4px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.alert-in {
+  animation-name: fade-in;
+  animation-duration: 0.8s;
+}
+
+.alert-out {
+  animation-name: fade-out;
+  animation-duration: 0.8s;
+}
+
+@keyframes fade-in {
+    0%   {opacity: 0;}
+    100% {opacity: 1;}
+}
+@keyframes fade-out {
+    0%   {opacity: 1;}
+    100% {opacity: 0;}
+}

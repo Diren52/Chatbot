@@ -1,0 +1,1004 @@
+#chatApp{
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background-color: #f7f8f9;
+  width: 70px;
+  text-align: left;
+  padding:5px 0;
+  overflow: hidden ;
+  z-index: 10;
+  transition: .3s ease-in-out;
+}
+#user {
+  display: flex;
+  flex-direction: column;
+  float: left;
+  border: 1px solid #ccc;
+  background-color: #f7f8f9;
+  width: 30%;
+  text-align: center;
+  padding-left: 70px  ;
+  transition: .5s ease-in-out;
+  overflow: hidden;
+}
+#chat{
+  height: 100%;
+  width: 40%;
+  float: left;
+  display: flex;
+  flex-direction: column;
+  background-color: #f7f8f9;
+}
+#infoPanel{
+  border: 1px solid lightgray ;
+  border-radius: 5px;
+  display: inline-flex;
+  width: 30%;
+  position: relative;
+  background-color: #f7f8f9;
+}
+.chat-prof{
+  width:100%;
+  height:50px;
+  float:top;
+  padding-bottom: 1%;
+  background-color: #f7f8f9;
+  position: relative;
+}
+.hidden-group-name{
+  display: none;
+  position: absolute;
+  background-color: #ededed;
+  width: 40px; height: 40px;
+  border-radius: 15%;
+}
+.hidden-group-name p, .chat-app-item span {
+  color: black;
+  line-height: 300%;
+}
+.chat-app-item:hover .hidden-group-name{
+  display: block;
+}
+.ticket_memo{
+    overflow: scroll !important;
+}
+hr{
+  padding: 0;
+  margin: 0;
+}
+.panelTable tbody tr th{
+  padding:0 10px;
+}
+.list-group{
+  margin-bottom: 0;
+}
+#messageMemo{
+  position: relative;
+  bottom: 25px;
+  width: 90%;
+
+}
+.submemo{
+  width:300px;
+  float:bottom;
+  position: absolute;
+  bottom:0px;
+  height: 60px;
+  padding:2% 1%;
+  background-color: white;
+  border-top: lightgrey solid 1px;
+
+}
+#submitMemo{
+/*  position: relative;
+  bottom: 20px;
+  width: 25px;
+  height: 25px;
+  background-image: url("http://simpleicon.com/wp-content/uploads/pen-15-256x256.png");
+  background-size: cover;
+  color: transparent;
+  background-color: rgba(255,255,255,.7);
+  background-blend-mode: color;
+  border: 0;*/
+}
+.memo_content{
+  width:300px;
+  height: 40px;
+  padding:3% 5%;
+  margin: 2% 0%;
+  background-color: lightyellow;
+}
+/*TICKET.CSS*/
+#form-wrap {
+  position: relative;
+  left: 20px;
+  width: 90%;
+}
+
+#edit-subt, #view-subt {
+  list-style: none;
+  position: relative;
+  left: -5%;
+}
+
+.bigFont {
+  font-size: 2em;
+}
+
+#ticket-header, #ticket-search, #ticket-tab {
+  position: relative;
+  /*border: solid 5px black;
+  height: 100px;*/
+}
+
+#ticket-header {
+  height: 30px;
+}
+
+#ticket-search {
+  height: 20px;
+}
+
+#header-left {
+  position: absolute;
+  left: 0;
+  /*border: solid 5px red;*/
+  width: 50%;
+  height: 50px;
+}
+
+#header-right {
+  position: absolute;
+  right: 0;
+  /*border: solid 5px orange;*/
+  width: 50%;
+  height: 50px;
+}
+
+.inner-add {
+  position: absolute;
+  right: 0;
+}
+
+.inner-add-complete {
+  margin: 1% 0 ;
+  padding:2%;
+  font-size:10px;
+  display:none;
+}
+
+
+input, select {
+  width: 15%;
+}
+#tdInner {
+  width: 80%;
+}
+/*Tabs*/
+/* Style the tab */
+div.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+div.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+div.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+div.tab button.active {
+    background-color: #00c300;
+}
+/*ticket form*/
+#task-list {
+  list-style: none;
+  border: solid 1px black;
+}
+
+@media (max-width: 1135px){
+  #ticket-wrap {
+    position: relative;
+    left: 250px;
+    width: 75%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 270px;
+    width: 70%
+  }
+}
+
+@media (max-width: 1000px){
+  #ticket-wrap {
+    position: relative;
+    left: 250px;
+    width: 72%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 270px;
+    width: 60%
+  }
+}
+
+@media (max-width: 767px){
+  #ticket-wrap {
+    position: relative;
+    left: 0px;
+    width: 100%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 20px;
+    width: 95%;
+  }
+}
+
+@media (max-width: 414px){
+  #ticket-wrap {
+    position: relative;
+    left: 0px;
+    width: 100%;
+  }
+
+  #form-wrap {
+    position: relative;
+    left: 20px;
+    width: 95%;
+  }
+}
+
+body,html{height: 100%}
+
+h1 {
+  color: white ;
+  background-color: black;
+  padding: 1% 5%;
+  margin: 0;
+}
+
+h2{
+  font-size: 16px ;
+  margin: 0;
+  color: white;
+  background-color: rgb(4, 92, 76);
+  padding: 1% 5%;
+}
+
+.ticketSearchBar {
+  width:100px;
+  border-radius: 5px;
+  margin-left: -35px
+}
+
+.ticket {
+  display: flex;
+  justify-content: center;
+  margin: 0% 0% ;
+  border : 1px solid gray ;
+  border-radius: 5px;
+  width: 100%;
+  font-size:12px;
+  padding: 0;
+}
+
+.ticket td, .ticket th {
+    border-bottom:  1px solid rgb(5, 82, 87);
+    text-align: left;
+    padding: 8px;
+    margin: 2px 0 ;
+}
+
+/*.ticket tr:nth-child(even) {
+    background-color: rgb(169, 196, 186);
+}*/
+.ticket table { width: 100%; }
+.sidebar{
+  width: 20%;
+}
+.main{
+  display: flex;
+  margin: 0;
+  width: 100%
+}
+
+.select{
+  width : 100px ;
+}
+
+.inner{
+  margin: 0 15px ;
+  position: relative;
+  float: left;
+  width: 80%;
+}
+
+.ticket_content:hover{
+  cursor:  pointer;
+  background-color: rgba(183, 208, 181, 0.77) ;
+  transition: .3s ease-in-out ;
+
+}
+.overdue{
+  padding: 1px 10px;
+  margin: 1px;
+  border-radius: 8px ;
+  background-color: rgb(227, 79, 79) ;
+  color: white ;
+  font-weight: bold;
+}
+
+.non{
+  background-color: rgb(91, 195, 92)
+}
+#ID_num{
+  display: flex;
+  width: 45px;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px ;
+  margin-right: 10px;
+  font-weight: bold;
+  color: white;
+  border-radius: 50%;
+}
+.modal-title{
+  font-size: 1.5em;
+  font-weight: bolder;
+  border-bottom: none;
+  display: flex;
+  align-items: flex-end;
+}
+textarea {
+   /* will prevent resizing horizontally */
+   resize:vertical;
+}
+input[type="range"]{
+  -webkit-appearance: none;
+  overflow:hidden;     /* 限定範圍 */
+  width:200px;
+  height:20px;
+  outline : none;      /* 避免點選會有藍線或虛線 */
+  background:none;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  position: relative;    /* 設為相對位置，為了前後區塊的絕對位置而設定 */
+  width:10px;
+  height:10px;
+  background:#f22;
+  border-radius:50%;
+  transition:.2s;        /* 點選放大時候的漸變時間 */
+}
+input[type="range"]::-webkit-slider-thumb:before,
+input[type="range"]::-webkit-slider-thumb:after
+{
+  position: absolute;
+  top: 3px;
+  width: 2000px;          /* 長度很長沒關係，因為剛剛有用 overflow:hidden 了 */
+  height: 4px;
+  content:"";
+  pointer-events: none;   /* 讓滑鼠可以點擊穿透偽元素，不然會點不到下面 */
+  transition:.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:before{
+  left: -1997px;
+  background: #f22;
+}
+input[type="range"]::-webkit-slider-thumb:after {
+  left: 10px;
+  background: #edc;
+}
+input[type="range"]:active::-webkit-slider-thumb:before,
+input[type="range"]:active::-webkit-slider-thumb:after
+{
+  top: 6px;
+}
+
+input[type="range"]:active::-webkit-slider-thumb{
+  width:16px;
+  height:16px;
+}
+
+input[type="range"]:active::-webkit-slider-thumb:after {
+  left: 16px;
+}
+/*END TICKET.CSS*/
+
+.agentImg_holder{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  min-width: 50px;
+  float:right;
+  position: absolute;
+  margin-left: 170px;
+  background-color: lightgrey;
+}
+.enterprise {
+  display: none;
+}
+.content-panel {
+  /*margin-left: 100px;*/
+  height: 600px;
+  width: 35%;
+  float: left;
+  resize: both;
+  overflow: hidden;
+}
+.unreadMsg{
+  border:1px solid limegreen;
+  border-radius:50px;
+  width:20px;
+  height:20px;
+  background-color:limegreen;
+  color:white;
+  text-align:center;
+  float:right;
+  margin-top:20px;
+}
+.tablinks_head{
+  font-size:14px;
+  font-weight:bold;
+}
+.confirmProfileArea{
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 0;
+  width: 19%;
+  background-color: rgba(255,255,255,.9);
+  position: absolute;
+  transition: .3s ease-in-out;
+  overflow: hidden;
+  box-shadow: 3px 8px 10px 0 rgba(0,0,0,.5);
+}
+#userInfo-submit,#userInfo-cancel
+{
+  height: 30px;
+  padding: 0 13px;
+  background-color: rgb(228, 100, 100);
+  color: white;
+}
+#userInfo-submit{background-color: rgb(98, 198, 105)}
+@media (max-width: 770px) {
+  #聊天軟體,#聊天用戶,#聊天室, #用戶檔案, #內部聊天室  {
+    width: 99% !important;
+    float:left;
+  }
+  #navHead{
+    margin-left: 10%!important;
+  }
+
+}
+@media (max-width: 450px) {
+ .navMenu  {
+    width:60%;
+
+  }
+}
+.sendTime{
+  color:grey;
+  font-size: 10px
+}
+#prof_nick{
+  position: absolute;
+  font-size: 100%;
+  float:bottom;
+  padding: 2%;
+}
+html,body{
+  height: 100%;
+  font-family: Microsoft JhengHei;
+  overflow: hidden;
+}
+.sender{
+  display:none;
+}
+#wrapper{
+  height: 7%;
+}
+#chatHome{
+  position: relative;
+  left: 0;
+  width: 100%;
+  height: 93%
+}
+
+.colume{
+  height: 100%;
+  border-left: 1px solid rgb(199, 199, 199) ;
+  overflow: hidden;
+}
+/*左方篩選圖示區塊*/
+.chat-app-item{
+  width: 500px;
+  display: flex;
+  height: 60px;
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+}
+.chat-app-item:hover,.select{
+  background-color: #afafaf;
+  color: white;
+}
+.unreadMsg-count{
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  height: 20px;
+  width: 20px;
+  background-color: red;
+  border-radius: 50%;
+  z-index: 999;
+  display: none;
+  text-align: center;
+}
+.software-icon{
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 15%;
+}
+.filter_head{
+  padding: 10px;
+  height: 80px;
+}
+.filter_head i{
+  font-size: 20px;
+  margin: 0 5px;
+  float: right;
+  cursor: pointer;
+}
+.filter_head .fa-filter{
+  float: left;
+}
+.search{
+  width: 100%
+}
+#searchBox {
+  padding-left: 25px;
+  margin: 3px;
+  float: left;
+  border: 1px solid #ccc;
+  width: 95%;
+  height: 25px;
+  padding-right: 94px;
+}
+
+.this-number, .slash-number, .total-number {
+  color: #b3b3b3;
+}
+
+.number {
+  position: absolute;
+  right: 80px;
+  top: 6px;
+}
+
+body .grey {
+  color: #b3b3b3;
+}
+.glyphicon.grey {
+  top: 9px;
+  margin-right: 2px;
+  position: absolute;
+  cursor: pointer;
+}
+
+.glyphicon.grey.glyphicon-chevron-up {
+  right: 55px;
+}
+
+.glyphicon.grey.glyphicon-chevron-down {
+  right: 35px;
+}
+
+#filterClean{
+  width: 30px  ;
+  height: 30px  ;
+  border-radius: 50%  ;
+  background-color: transparent;
+}
+#user select{
+  float: right;
+  border-radius: 5px;
+  width: 100px;
+}
+.filterArea{
+  position: relative;
+  background-color: #f1f1f1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 10px;
+}
+.filterPanel{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.filterBar {
+  display: inline;
+  margin: 5px 0 ;
+  width: 100%
+}
+.filter_btn{
+  width: 100%;
+  margin: 0;
+  padding: 5px 0;
+  font-size: 16px;
+  background-color: transparent;
+  text-align: left;
+  border-radius: 0
+}
+.filter_btn:hover{
+  background-color: #ccc
+}
+.tablinks_head{
+  overflow: hidden;
+  height: 80px;
+  width: 100%;
+  border-bottom: 2px solid #ccc;
+  transition: .3s ease-in-out;
+}
+.tablinks-area{
+  flex:1;
+  display: block;
+  position: relative;
+  background-color: inherit;
+  height: 88% ;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  width: 100%;
+  z-index: 2;
+}
+.tablinks-area::-webkit-scrollbar-track,
+.messagePanel::-webkit-scrollbar-track,
+#infoCanvas::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+	border-radius: 5px;
+	background-color: transparent;
+}
+.tablinks-area::-webkit-scrollbar,
+.messagePanel::-webkit-scrollbar,
+#infoCanvas::-webkit-scrollbar
+{
+	width: 4px;
+	background-color: transparent;
+}
+.tablinks-area::-webkit-scrollbar-thumb,
+.messagePanel::-webkit-scrollbar-thumb,
+#infoCanvas::-webkit-scrollbar-thumb
+{
+	border-radius: 3px;
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color: white;
+}
+.tablinks-area button {
+  border-radius: 0;
+  margin: 0;
+  display: flex;
+  background-color: inherit;
+  color: black;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  outline: none;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 14px;
+  font-weight: bold;
+}
+.tablinks-area button:hover{
+  background-color: #e8e8e8;
+}
+.tablinks{
+  height: 100px;
+  overflow: hidden;
+  text-align: left;
+}
+.tablinks .msg_holder{
+  height: 60px;
+  overflow: inherit;
+}
+.tablinks .img_holder{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  overflow: hidden;
+  margin-right: 10px;
+  min-width: 50px
+}
+.list-group{
+  float: left;
+  /*padding: 12px 0;*/
+  width: 100%;
+  border-left: none;
+  display:block;
+}
+.messagePanel {
+  height: 95%;
+  overflow-y: scroll;
+  clear:right;
+  display: flex;
+  flex-direction: column;
+}
+#send-message {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-top: 1px solid lightgray;
+  background-color: lightgray;
+  display: none;
+}
+#canvas{
+  height: 60%;
+  width: 100%;
+  flex:1;
+}
+
+#submitMsg{
+  width: 30px;
+  height: 30px;
+  background-image: url("https://image.flaticon.com/icons/svg/60/60525.svg");
+  background-size: cover;
+  color: transparent;
+  background-color: rgba(255,255,255,.7);
+  background-blend-mode: color;
+  border: 0;
+}
+#submitMsg:hover{background-color: rgba(255,255,255,.5);}
+#file-image, #file-video, #file-audio{
+  display: none;
+}
+.user-room-container{
+  display: none;
+}
+.insert-media{
+  position:absolute;
+  display:block;
+}
+/*input檔案區塊*/
+.form-upper button{
+  height: 40px;
+  font-size: 24px;
+  width: 40px;
+  border-radius: 50%;
+  background-color: transparent
+}
+.form-upper button:hover,
+.form-upper button[active~='true']{
+  background-color: #ccc;
+}
+.form-upper{
+  height: 50px;
+  background-color: white;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  z-index: 1;
+}
+.form-lower{
+  padding: 0 10px;
+  background-color: white;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  z-index: 1;
+}
+.form-lower input[type="text"]{
+  width:85%;
+  height:50px;
+  border:0;
+}
+#headBar {
+  margin-bottom: 20px;
+  display: flex;
+}
+button{
+  border-radius: 5px ;
+  margin: 5px;
+  border:0;
+}
+.datepicker{
+  border-radius: 5px;
+  border: 0px;
+  padding-left: 5px ;
+  width: 100px;
+  margin: 0 5px
+}
+
+.filterArea select{
+  border-radius: 5px ;
+  border: 0
+}
+.filterArea h4{
+  width: 100%;
+  margin: 0;
+  padding: 5px;
+  border-bottom: 1px lightgray solid ;
+  text-align: center;
+  cursor: pointer;
+}
+
+.filterSlider label {
+  position: absolute;
+  width: 20px;
+  margin-left: -100px;
+  float: left;
+  text-align: center;
+  margin-top: -10px;
+  white-space: nowrap;
+}
+.filterSlider {
+  margin: auto 2em;
+  float: right;
+  height: 200px;
+}
+#showChatApp{
+  display:none;
+  height:500px;
+  align-items:center;
+  padding-right:1px;
+  cursor: pointer;
+  background-color: rgb(186, 186, 186);
+}
+.chat-area{
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+/* Style the tab content */
+.tabcontent {
+  float:left;
+  border:1px solid #ccc;
+  height:100%;
+  border-left:none;
+  display:none;
+  width:100%;
+}
+.topright{
+  height: 5%;
+  float:right;
+  cursor: pointer;
+}
+p {
+  padding-left: 2px;
+}
+.reply{
+  float:top;
+}
+#userInfoBtn {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  float: left;
+}
+.info_input_table {
+  width: 100%;
+}
+.info_input_table tr{}
+.userInfo-th {
+  width: 50%;
+  padding-top: 10px;
+}
+.userInfoTd {
+  width: 50%;
+  padding-top: 10px;
+  /*margin: 10px;*/
+}
+
+#clients {
+  list-style: none;
+}
+.edit-button{
+  display: none;
+  padding: 2px 5px;
+  border: 1px solid gray;
+  background-color: lightgray;
+}
+.multiselect-container li {
+  margin: 10px;
+}
+.userPhoto {
+  float: left;
+  margin-right: 40px;
+}
+#infoPanel td{
+  word-wrap: break-word;
+}
+#infoCanvas{
+  height: 92%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  width: 100%;
+}
+.profile-confirm {
+  margin-top: 10px;
+  margin-bottom: 60px;
+}
+.choose {
+  width:18%;
+  position:absolute;
+  top:40%;
+  margin:10px;
+  z-index:0
+}
+.error{
+  color: red;
+  font-weight: bold;
+  margin:10px;
+  display: none;
+}
+.card{
+  width: 100%;
+}
+.memo{
+  width: 45%;
+}
+.photoContainer{
+  display: flex;
+  justify-content: center;
+}
+.panelTable{
+  margin: 0%;
+}
+.tagSpan{
+  margin: 2%;
+  padding: 1% 3% ;
+  border: .75px solid black ;
+  border-radius: 5px ;
+}
+.ticket-card{
+  border: 1px solid black;
+  border-radius: 5px;
+  margin: 3% 1%;
+  width: 98%;
+  overflow: hidden;
+}
+.card-footer{
+  background-color: lightgray ;
+}
+/*聊天室訊息*/
+.message-day{
+  text-align: center;
+}
+.card-group{
+  display: none;
+}
+img[alt="無法顯示相片"]{
+  width:50px;
+  height:50px;
+}
+
+.found{
+  color: #ff0000;
+  background-color: #ffff00 !important;
+}
